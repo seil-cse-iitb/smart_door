@@ -64,12 +64,12 @@ class EntryExitDFA(object):
 
     def exit(self):
         self.callback(-1)
-        print("Exit!!")
+        # print("Exit!!")
         pass
 
     def entry(self):
         self.callback(1)
-        print("Entry!!")
+        # print("Entry!!")
         pass
 
 

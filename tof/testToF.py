@@ -1,10 +1,11 @@
 from ToF import ToF
 
-def test():
+def test(value):
+    print(value)
     pass
 
 tof = ToF(test)
-
+tof.verbose = True
 #tof.test()
 
 tof.monitor()
