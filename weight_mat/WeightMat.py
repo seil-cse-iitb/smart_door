@@ -140,7 +140,7 @@ class WeightMat:
     def send(self, record):
         if self.verbose:
             print(record, " Send Function yet to write")
-        self.callback(record)
+        self.callback(record[0][0],record[0][1])
         return record
 
     def monitor(self):
@@ -148,7 +148,6 @@ class WeightMat:
             reading = self.read()
             if reading > 20000:
                 self.reading_started = True
-                print(reading)
                 self.readings.append(reading)
             elif self.reading_started:
                 self.reading_started = False

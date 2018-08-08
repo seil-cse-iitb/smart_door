@@ -6,11 +6,13 @@ import VL53L0X
 
 class ToF:
 
-    def __init__(self):
+    def __init__(self,callback):
+        self.verbose = False
         self.tof = VL53L0X.VL53L0X()
         self.door_height = 2000
         self.session = False
         self.session_id = 0
+        self.callback = callback
 
     def monitor(self):
         self.tof.start_ranging(VL53L0X.VL53L0X_GOOD_ACCURACY_MODE)
@@ -20,25 +22,28 @@ class ToF:
 
         reading_count = 0
         person_distance = 0
+        distance_list = []
         while True:
             distance = self.tof.get_distance()
-            print(distance)
+#            print(distance)
             if 0 < distance < 6000:
                 self.session = True
                 self.session_id += 1
-                csv = open("tof_data.csv", "a+")
-                record = str(self.session_id) + "," + str(distance) + "," + str(reading_count) + "\n"
-                csv.write(record)
-                print("%d mm, %d cm, %d" % (distance, (distance / 10), reading_count))
+                if self.verbose:
+                    print("%d mm, %d cm, %d" % (distance, (distance / 10), reading_count))
                 person_distance += distance
+                distance_list.append(distance)
                 reading_count += 1
             else:
                 if self.session:
                     self.session = False
-                    print("Session completed: ", (person_distance / reading_count))
+                    # print("Session completed: ", (person_distance / reading_count))
+                    if self.verbose:
+                        print("Session completed: ", min(distance_list))
+                    self.callback(min(distance_list))
+                    distance_list = []
                     person_distance = 0
                     reading_count = 0
-                    csv.close()
             time.sleep(timing / 1000000.00)
 
     # def calibrate(self):
@@ -78,7 +83,10 @@ class ToF:
             timing = 20000
         print("Timing %d ms" % (timing / 1000))
 
-        for count in range(1, 101):
+##        for count in range(1, 101):
+        count = 0
+        while(True):
+            count += 1
             distance = tof.get_distance()
             if (distance > 0):
                 print("%d mm, %d cm, %d" % (distance, (distance / 10), count))

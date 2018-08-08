@@ -1,10 +1,13 @@
 from ToF import ToF
 
-tof = ToF()
+def test():
+    pass
 
-tof.test()
+tof = ToF(test)
 
-# tof.monitor()
+#tof.test()
+
+tof.monitor()
 
 
 # if tof.calibrate():
