@@ -1,3 +1,10 @@
+
+
+import sys, os
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
+# above code is for adding current folder as library path so that python search this directory also for any library
+
 import math
 
 # from sklearn import preprocessing, svm
@@ -15,6 +22,7 @@ class WeightMat:
     def read(self):
         line = str(self.s.readline())[2:-5]
         try:
+            reading  = 0.0
             if(len(line.strip())>0):
                 reading = float(line.strip())
             else:

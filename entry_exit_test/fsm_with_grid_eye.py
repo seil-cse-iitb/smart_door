@@ -7,16 +7,16 @@ import sys
 
 
 class EntryExitDFA(object):
-    states = ["0","1","2","3","4","5","6","7","8","9"]
-    
-    triggers =["OO","OI","IO","II"] #[0,1,2,3] #["00","01","10","11"]
-    
-    def __init__(self,callback):
+    states = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
+    triggers = ["OO", "OI", "IO", "II"]  # [0,1,2,3] #["00","01","10","11"]
+
+    def __init__(self, callback):
         self.callback = callback
         print("DFA init!")
-      
+
         self.machine = Machine(model=self, states=EntryExitDFA.states, initial="0")
-      
+
         self.machine.add_transition(trigger=self.triggers[0], source="0", dest="0")
         self.machine.add_transition(trigger=self.triggers[1], source="0", dest="1")
         self.machine.add_transition(trigger=self.triggers[2], source="0", dest="2")
@@ -71,7 +71,8 @@ class EntryExitDFA(object):
         self.callback(1)
         print("Entry!!")
         pass
-    
+
+
 class GridEye(object):
 
     def __init__(self, callback):
@@ -86,13 +87,8 @@ class GridEye(object):
         sleep(0.1)
         print("Initialized Grid Eye")
 
-        self.first_triggered = False
-
-        self.sensorL = False
-        self.sensorR = False
-        left_calibration, right_calibration = self.calibrate()
-        print("Left calibration : {0}, Right calibration: {1}".format(left_calibration, right_calibration))
-        
+        self.left_calibration, self.right_calibration = self.calibrate()
+        print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
 
     def read_pixels(self):
         right_pixels = []
@@ -102,14 +98,14 @@ class GridEye(object):
         left_pixels = self.pixels[32:]
 
         return left_pixels, right_pixels
-    
+
     def calculate_sum(self):
         left_pixels, right_pixels = self.read_pixels()
         left_sum = 0
         right_sum = 0
         left_sum = sum(left_pixels)
         right_sum = sum(right_pixels)
-        
+
         return left_sum, right_sum
 
     def calibrate(self):
@@ -122,13 +118,13 @@ class GridEye(object):
             left_calibration += left_temp
             right_calibration += right_temp
             sleep(0.1)
-        
+
         left_calibration /= 50
         right_calibration /= 50
 
         return left_calibration, right_calibration
 
-    def triggerEvent(self, dfa,sensorL,sensorR):
+    def triggerEvent(self, dfa, sensorL, sensorR):
         if not sensorL and not sensorR:
             return dfa.OO()
         if sensorL and not sensorR:
@@ -138,40 +134,26 @@ class GridEye(object):
         if sensorL and sensorR:
             return dfa.II()
 
-    def monitor(self):    
+    def monitor(self):
 
         while True:
-            left_sum, right_sum = grid_eye_obj.calculate_sum()
-                # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
+            left_sum, right_sum = self.calculate_sum()
+            # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
 
-            if left_sum > left_calibration + 100:
-                self.sensorL=True
-                if not first_triggered:
-                    print("Left Sensor triggered")
+            if left_sum > self.left_calibration + 120:
+                sensorL = True
             else:
-                self.sensorL=False
-                if first_triggered:
-                    print("Left Sensor halted")
+                sensorL = False
 
-            if right_sum > right_calibration + 100:
-                self.sensorR=True
-                if not second_triggered:
-                    print("Right Sensor triggered")
+            if right_sum > self.right_calibration + 120:
+                sensorR = True
             else:
-                self.sensorR=False
-                if second_triggered:
-                    print("Right Sensor halted")
+                sensorR = False
 
             try:
-                triggerEvent(dfa,self.sensorL, self.sensorR)
+                self.triggerEvent(self.dfa, sensorL, sensorR)
             except:
                 print("Invalid Event!!")
-                dfa.machine.set_state(dfa.machine.initial,model=dfa)
+                self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
 
-                sleep(0.10)
-
-def test(entryExit):
-    print (entryExit)
-
-
-gridEyeObj = GridEye(test)
+            sleep(0.10)

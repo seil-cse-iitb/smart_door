@@ -1,21 +1,26 @@
 #!/usr/bin/python
 
+import sys, os
+file_dir = os.path.dirname(__file__)
+sys.path.append(file_dir)
+# above code is for adding current folder as library path so that python search this directory also for any library
+
 import time
-import VL53L0X
+import VL53L0X as VL
 
 
 class ToF:
 
     def __init__(self,callback):
         self.verbose = False
-        self.tof = VL53L0X.VL53L0X()
+        self.tof = VL.VL53L0X()
         self.door_height = 2000
         self.session = False
         self.session_id = 0
         self.callback = callback
 
     def monitor(self):
-        self.tof.start_ranging(VL53L0X.VL53L0X_GOOD_ACCURACY_MODE)
+        self.tof.start_ranging(VL.VL53L0X_GOOD_ACCURACY_MODE)
         timing = self.tof.get_timing()
         if timing < 20000:
             timing = 20000
@@ -49,7 +54,7 @@ class ToF:
     # def calibrate(self):
     #     print("Calibrating ToF!")
     #
-    #     self.tof.start_ranging(VL53L0X.VL53L0X_LONG_RANGE_MODE)
+    #     self.tof.start_ranging(VL.VL53L0X_LONG_RANGE_MODE)
     #
     #     timing = self.tof.get_timing()
     #     if timing < 20000:
@@ -73,10 +78,10 @@ class ToF:
 
     def test(self):
         # Create a bin object
-        tof = VL53L0X.VL53L0X()
+        tof = VL.VL53L0X()
 
         # Start ranging
-        tof.start_ranging(VL53L0X.VL53L0X_BETTER_ACCURACY_MODE)
+        tof.start_ranging(VL.VL53L0X_BETTER_ACCURACY_MODE)
 
         timing = tof.get_timing()
         if (timing < 20000):
