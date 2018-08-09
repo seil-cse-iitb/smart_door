@@ -33,7 +33,7 @@ class ToF:
         while True:
             distance = self.tof.get_distance()
 #            print(distance)
-            if 0 < distance < 6000:
+            if 0 < distance < 600:
                 self.session = True
                 self.session_id += 1
                 if self.verbose:
@@ -47,7 +47,7 @@ class ToF:
                     # print("Session completed: ", (person_distance / reading_count))
                     if self.verbose:
                         print("Session completed: ", min(distance_list))
-                    self.callback(median(distance_list))
+                    self.callback(min(distance_list))
                     distance_list = []
                     person_distance = 0
                     reading_count = 0

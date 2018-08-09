@@ -21,7 +21,7 @@ def time_monitor():
     global kill_time_thread
     global ts_init
 
-    print("Started timer thread at ", ts)
+    # print("Started timer thread at ", ts)
     while not kill_time_thread:
         if int(time.time()) - ts < 10:
             continue
@@ -33,7 +33,7 @@ def time_monitor():
             
     kill_time_thread = False
     ts_init = False
-    print("End of TS monitor")
+    # print("End of TS monitor")
     return 0
 
 def timer_interrupt():
@@ -71,7 +71,7 @@ def ge_callback(entry_exit):
         entry_exit_status = "exit"
     else:
         entry_exit_status = "invalid event (GridEye)"
-    print("Event: ", entry_exit_status)
+    # print("Event: ", entry_exit_status)
 
     ge_status = entry_exit
 
@@ -86,7 +86,7 @@ def wm_callback(weight, steps):
     global kill_time_thread
 
     id = 2
-    print("Weight: ", weight, " Steps: ", steps)
+    # print("Weight: ", weight, " Steps: ", steps)
 
     wm_status[0] = weight
     wm_status[1] = steps
@@ -104,7 +104,7 @@ def tof_callback(height):
     global kill_time_thread
 
     id = 3
-    print("Height: ", height)
+    # print("Height: ", height)
     us_status = height
 
     timer_interrupt()
@@ -132,6 +132,7 @@ def get_request_url(url):
     response = requests.get(url)
     if (response.status_code == 200):
         print("Successfully sent=> ", url)
+        pass
     else:
         print("Failed to sent=> ", url)
         print("Response: ", response)

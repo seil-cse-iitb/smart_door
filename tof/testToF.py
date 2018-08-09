@@ -6,9 +6,9 @@ def test(value):
 
 tof = ToF(test)
 tof.verbose = True
-tof.test()
+# tof.test()
 
-# tof.monitor()
+tof.monitor()
 
 
 # if tof.calibrate():

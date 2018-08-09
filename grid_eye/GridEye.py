@@ -113,9 +113,9 @@ class GridEye(object):
         right_pixels = []
         left_pixels = []
         self.pixels = self.sensor.readPixels()
+        # print("\nPixels: ", self.pixels)
         right_pixels = self.pixels[:32]
         left_pixels = self.pixels[32:]
-
         return left_pixels, right_pixels
 
     def calculate_sum(self):
@@ -224,6 +224,60 @@ class GridEye(object):
                 sleep(0.10)
             except Exception as e:
                 print("error ge: "+str(e))
+   
+    def calibrate_ones(self):
+        while True:
+            self.read_pixels()
+            print("Pixels")
+            print(np.transpose(np.reshape(self.pixels, [8, 8]) >114).astype(int))
+            print("\n")
+            sleep(.1)
+
+    def monitor_ones(self):
+        self.read_pixels()
+        threshold = int(np.mean(np.sort(self.pixels)[-5:]))
+        first_direction = 0
+        second_direction = 0
+        
+        while True:
+            self.read_pixels()
+            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold+1).astype(int)
+            # print("right:\n",pixels_array[:,0:3],"\nleft:\n",pixels_array[:,-3:],"\n")
+            right= pixels_array[:,0:3]
+            left =pixels_array[:,-3:]
+
+            all_count = np.count_nonzero(pixels_array)
+            right_count = np.count_nonzero(right)
+            left_count = np.count_nonzero(left)
+            # print("All count", all_count)
+            # print("Left count", left_count)
+            # print("Right count", right_count)
+            # print("")
+
+            if all_count>12:
+                if first_direction == 0:
+                    if left_count - right_count > 5 or left_count - right_count < -5:
+                        first_direction = left_count - right_count
+                        # print("Set first_direction : ", first_direction)
+                else:
+                    second_direction = left_count - right_count
+                    # print("Set second_direction", second_direction)
+            else:
+                if first_direction < 0 and second_direction < 0:
+                    print("Bhag gaya bc")
+                elif first_direction < 0 and second_direction > 0:
+                    self.callback(1)
+                elif first_direction > 0 and second_direction < 0:
+                    self.callback(-1)
+                elif first_direction > 0 and second_direction > 0:
+                    print("Andar aa gaya bc")
+
+                first_direction = 0
+                second_direction = 0
+
+            sleep(0.05)
+            
 
     def monitor(self):
-        self.monitor_histogram()
+        # self.monitor_histogram()
+        self.monitor_ones()

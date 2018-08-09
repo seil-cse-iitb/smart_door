@@ -5,4 +5,6 @@ def test(event):
     print(time.asctime()," : ",event)
 
 ge_object = ge(test)
+# ge_object.monitor()
+
 ge_object.monitor()
