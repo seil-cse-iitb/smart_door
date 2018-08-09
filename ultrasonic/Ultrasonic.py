@@ -1,4 +1,6 @@
 import time
+from statistics import median
+
 from hcsr04sensor import sensor
 from threading import Thread, Timer
 import RPi.GPIO as GPIO
@@ -72,13 +74,15 @@ class Ultrasonic:
             distance = round(distance, 2)
             # print( self.id," Distance:",distance,"cm")
 
-            if 0 <= distance <= self.limit:
+            if 11 <= distance <= self.limit:
                 self.session = True
                 self.session_counter=5
                 if self.verbose:
                     print("%d mm, %d cm, %d" % (distance, (distance / 10), self.reading_count))
                 self.distance_list.append(distance)
                 self.reading_count += 1
+            elif distance<11:
+                pass
             else:
                 if self.session:
                     if self.session_counter>0:
@@ -87,8 +91,8 @@ class Ultrasonic:
                         self.session = False
                         # print("Session completed: ", (person_distance / reading_count))
                         if self.verbose:
-                            print("Session completed: ", min(self.distance_list))
-                        self.callback(min(self.distance_list))
+                            print("Session completed: min:", min(self.distance_list))
+                        self.callback(median(self.distance_list))
                         self.distance_list = []
                         self.reading_count = 0
 

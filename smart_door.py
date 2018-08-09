@@ -31,7 +31,7 @@ weight_serial_name = "ttyUSB0"
 tof = ToF(tof_callback)
 wm = WM(weight_serial_name, wm_callback)
 ge = GE(ge_callback)
-us = US(17,4,80,us_callback)
+us = US(17,4,70,us_callback)
 
 # tof.verbose = True
 # wm.verbose = True

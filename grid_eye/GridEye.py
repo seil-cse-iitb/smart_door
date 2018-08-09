@@ -1,4 +1,5 @@
 from transitions import *
+import numpy as np
 import random
 import re
 from time import *
@@ -89,7 +90,25 @@ class GridEye(object):
         self.left_calibration=0
         self.right_calibration=0
 
+
+    def monitor_temperature(self):
+        temp = self.sensor.readThermistor()
+        return temp
         
+    def calculate_histogram(self):
+        right_pixels = []
+        left_pixels = []
+        
+        right_hist = []
+        left_hist = []
+        hist_bins = [110, 115, 120, 125, 130]
+        left_pixels, right_pixels = self.read_pixels()
+        
+        left_hist = np.histogram(left_pixels[:-8], bins = hist_bins)
+        right_hist = np.histogram(right_pixels[8:], bins = hist_bins)
+
+        return left_hist, right_hist
+
     def read_pixels(self):
         right_pixels = []
         left_pixels = []
@@ -134,7 +153,51 @@ class GridEye(object):
         if sensorL and sensorR:
             return dfa.II()
 
-    def monitor(self):
+    def monitor_histogram(self):
+        # self.left_calibration, self.right_calibration = self.calibrate()
+        # print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
+
+        while True:
+            try:
+                left_hist, right_hist = self.calculate_histogram()
+                
+                # print("Left Values : %d < 120, %d < 125, %d < 130"%(left_hist[0][1], left_hist[0][2], left_hist[0][3]))
+                # print("Right Values : %d < 120, %d < 125, %d < 130"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
+                
+                # print("\nLeft Histogram: ",left_hist)
+                # print("Right Histogram:",right_hist)
+                # print("\n")
+                left_count = left_hist[0][2]
+                right_count = right_hist[0][2]
+
+                # left_sum, right_sum = self.calculate_sum()
+                # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
+
+                if left_hist[0][1] > 5 or left_hist[0][2] > 2:
+                    sensorL = True
+                    print("Temperature : ", self.monitor_temperature())
+                    print("Left Values : %d < 120, %d < 125, %d < 130\n"%(left_hist[0][1], left_hist[0][2], left_hist[0][3]))
+                else:
+                    sensorL = False
+
+                if  right_hist[0][1] > 5 or  right_hist[0][2] > 2:
+                    sensorR = True
+                    print("Right Values : %d < 120, %d < 125, %d < 130\n"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
+                else:
+                    sensorR = False
+
+                try:
+                    self.triggerEvent(self.dfa, sensorL, sensorR)
+                except:
+                    print("Invalid Event!!")
+                    self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
+
+            except Exception as e:
+                print(str(e))
+
+            sleep(0.1)
+
+    def monitor_sum(self):
         self.left_calibration, self.right_calibration = self.calibrate()
         print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
         while True:
@@ -142,12 +205,12 @@ class GridEye(object):
                 left_sum, right_sum = self.calculate_sum()
                 # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
 
-                if left_sum > self.left_calibration + 100:
+                if left_sum > self.left_calibration + 120:
                     sensorL = True
                 else:
                     sensorL = False
 
-                if right_sum > self.right_calibration + 100:
+                if right_sum > self.right_calibration + 120:
                     sensorR = True
                 else:
                     sensorR = False
@@ -161,3 +224,6 @@ class GridEye(object):
                 sleep(0.10)
             except Exception as e:
                 print("error ge: "+str(e))
+
+    def monitor(self):
+        self.monitor_histogram()

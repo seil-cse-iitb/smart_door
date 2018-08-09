@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
 import sys, os
+from statistics import median
+
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 # above code is for adding current folder as library path so that python search this directory also for any library
@@ -45,7 +47,7 @@ class ToF:
                     # print("Session completed: ", (person_distance / reading_count))
                     if self.verbose:
                         print("Session completed: ", min(distance_list))
-                    self.callback(min(distance_list))
+                    self.callback(median(distance_list))
                     distance_list = []
                     person_distance = 0
                     reading_count = 0

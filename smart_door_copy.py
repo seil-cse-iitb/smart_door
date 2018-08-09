@@ -3,7 +3,8 @@ import time
 import requests
 from tof.ToF import ToF
 from weight_mat.WeightMat import WeightMat as WM
-from entry_exit_test.fsm_with_grid_eye import GridEye as GE
+# from entry_exit_test.fsm_with_grid_eye import GridEye as GE
+from grid_eye.GridEye import GridEye as GE
 from ultrasonic.Ultrasonic import Ultrasonic as US
 
 id_list = [0, 0, 0]
@@ -96,14 +97,24 @@ def wm_callback(weight, steps):
         kill_time_thread = True
         event_monitor()
 
-# def tof_callback(distance):
+def tof_callback(height):
     # print("Height: ", distance)
 
-def us_callback(height):
-    global id_list
     global us_status
-    global ts_init
-    global ts
+    global kill_time_thread
+
+    id = 3
+    print("Height: ", height)
+    us_status = height
+
+    timer_interrupt()
+
+    if events_check(id):
+        kill_time_thread = True
+        event_monitor()
+
+def us_callback(height):
+    global us_status
     global kill_time_thread
 
     id = 3
@@ -159,23 +170,23 @@ if __name__ == "__main__":
 
     weight_serial_name = "ttyUSB0"
 
-    # tof = ToF(tof_callback)
+    tof = ToF(tof_callback)
     wm = WM(weight_serial_name, wm_callback)
     ge = GE(ge_callback)
-    us = US(17,4,70,us_callback)
+    # us = US(17,4,70,us_callback)
 
     # tof.verbose = True
     # wm.verbose = True
     # us.verbose = True
     
-    us_thread = Thread(target=us.monitor)
-    us_thread.start()
+    # us_thread = Thread(target=us.monitor)
+    # us_thread.start()
 
     ge_thread = Thread(target=ge.monitor)
     ge_thread.start()
 
-    # tof_thread = Thread(target=tof.monitor)
-    # tof_thread.start()
+    tof_thread = Thread(target=tof.monitor)
+    tof_thread.start()
 
     wm_thread = Thread(target=wm.monitor)
     wm_thread.start()
@@ -183,8 +194,8 @@ if __name__ == "__main__":
     # em_thread = Thread(target= event_monitor)
     # em_thread.start()
 
-    # tof_thread.join()
-    us_thread.join()
+    tof_thread.join()
+    # us_thread.join()
     ge_thread.join()
     wm_thread.join()
     # em_thread.join()
