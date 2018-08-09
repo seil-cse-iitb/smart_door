@@ -42,13 +42,13 @@ us_thread.start()
 ge_thread = Thread(target=ge.monitor)
 ge_thread.start()
 
-tof_thread = Thread(target=tof.monitor)
+# tof_thread = Thread(target=tof.monitor)
 # tof_thread.start()
 
 wm_thread = Thread(target=wm.monitor)
 wm_thread.start()
 
-tof_thread.join()
+# tof_thread.join()
 wm_thread.join()
 ge_thread.join()
 us_thread.join()

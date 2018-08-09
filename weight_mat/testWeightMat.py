@@ -1,8 +1,8 @@
 from WeightMat import *
 
 
-def weight_session_callback(record):
-    print("weight callback!")
+def weight_session_callback(weight,steps):
+    print("weight callback!"+str(weight)+" "+str(steps))
     pass
 
 weight_serial_name = "ttyUSB0"

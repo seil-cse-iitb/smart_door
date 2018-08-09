@@ -45,7 +45,7 @@ class Ultrasonic:
             GPIO.output(self.trigger_pin, True)
             time.sleep(0.00005)
             GPIO.output(self.trigger_pin, False)
-            time.sleep(0.1)
+            time.sleep(0.03)
 
     def monitor(self):
         try:

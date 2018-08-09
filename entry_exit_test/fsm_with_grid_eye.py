@@ -13,7 +13,7 @@ class EntryExitDFA(object):
 
     def __init__(self, callback):
         self.callback = callback
-        print("DFA init!")
+        # print("DFA init!")
 
         self.machine = Machine(model=self, states=EntryExitDFA.states, initial="0")
 
@@ -85,11 +85,11 @@ class GridEye(object):
         # Setting 10 FPS
         self.sensor._fpsc.FPS = AMG88xx_FPS_10
         sleep(0.1)
-        print("Initialized Grid Eye")
+        # print("Initialized Grid Eye")
+        self.left_calibration=0
+        self.right_calibration=0
 
-        self.left_calibration, self.right_calibration = self.calibrate()
-        print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
-
+        
     def read_pixels(self):
         right_pixels = []
         left_pixels = []
@@ -109,7 +109,7 @@ class GridEye(object):
         return left_sum, right_sum
 
     def calibrate(self):
-        print("Calibrating..!!")
+        print("Calibrating GridEye..!!")
         left_calibration = 0
         right_calibration = 0
 
@@ -135,25 +135,29 @@ class GridEye(object):
             return dfa.II()
 
     def monitor(self):
-
+        self.left_calibration, self.right_calibration = self.calibrate()
+        print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
         while True:
-            left_sum, right_sum = self.calculate_sum()
-            # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
-
-            if left_sum > self.left_calibration + 120:
-                sensorL = True
-            else:
-                sensorL = False
-
-            if right_sum > self.right_calibration + 120:
-                sensorR = True
-            else:
-                sensorR = False
-
             try:
-                self.triggerEvent(self.dfa, sensorL, sensorR)
-            except:
-                print("Invalid Event!!")
-                self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
+                left_sum, right_sum = self.calculate_sum()
+                # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
 
-            sleep(0.10)
+                if left_sum > self.left_calibration + 100:
+                    sensorL = True
+                else:
+                    sensorL = False
+
+                if right_sum > self.right_calibration + 100:
+                    sensorR = True
+                else:
+                    sensorR = False
+
+                try:
+                    self.triggerEvent(self.dfa, sensorL, sensorR)
+                except:
+                    print("Invalid Event!!")
+                    self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
+
+                sleep(0.10)
+            except Exception as e:
+                print("error ge: "+str(e))
