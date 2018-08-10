@@ -6,5 +6,5 @@ def test(event):
 
 ge_object = ge(test)
 # ge_object.monitor()
-
+ge_object.verbose = True
 ge_object.monitor()

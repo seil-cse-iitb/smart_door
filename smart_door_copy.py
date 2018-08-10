@@ -1,6 +1,10 @@
+import glob
+import sys
 from threading import Thread
 import time
 import requests
+import serial
+
 from tof.ToF import ToF
 from weight_mat.WeightMat import WeightMat as WM
 # from entry_exit_test.fsm_with_grid_eye import GridEye as GE
@@ -16,6 +20,7 @@ ts_init = False
 ts = 0
 kill_time_thread = False
 
+
 def time_monitor():
     global ts
     global kill_time_thread
@@ -30,40 +35,43 @@ def time_monitor():
             id_list = [0, 0, 0]
             ts_list = [0, 0, 0]
             break
-            
+
     kill_time_thread = False
     ts_init = False
     # print("End of TS monitor")
     return 0
 
+
 def timer_interrupt():
     global ts_init
     global ts
-    
+
     if not ts_init:
         ts = int(time.time())
         ts_init = True
         timer_thread = Thread(target=time_monitor)
         timer_thread.start()
 
+
 def events_check(id):
     global id_list
 
     is_equal = True
     ts_match = True
-    id_list[id-1] = 1
+    id_list[id - 1] = 1
 
     for i in range(0, len(id_list)):
         if id_list[i] != 1:
             is_equal = False
             break
-    
+
     return is_equal
+
 
 def ge_callback(entry_exit):
     global ge_status
     global kill_time_thread
-    
+
     id = 1
     if entry_exit == 1:
         entry_exit_status = "entry"
@@ -81,12 +89,13 @@ def ge_callback(entry_exit):
         kill_time_thread = True
         event_monitor()
 
+
 def wm_callback(weight, steps):
     global wm_status
     global kill_time_thread
 
     id = 2
-    # print("Weight: ", weight, " Steps: ", steps)
+    print("Weight: ", weight, " Steps: ", steps)
 
     wm_status[0] = weight
     wm_status[1] = steps
@@ -97,6 +106,7 @@ def wm_callback(weight, steps):
         kill_time_thread = True
         event_monitor()
 
+
 def tof_callback(height):
     # print("Height: ", distance)
 
@@ -104,7 +114,7 @@ def tof_callback(height):
     global kill_time_thread
 
     id = 3
-    # print("Height: ", height)
+    print("Height: ", height)
     us_status = height
 
     timer_interrupt()
@@ -112,6 +122,7 @@ def tof_callback(height):
     if events_check(id):
         kill_time_thread = True
         event_monitor()
+
 
 def us_callback(height):
     global us_status
@@ -137,10 +148,12 @@ def get_request_url(url):
         print("Failed to sent=> ", url)
         print("Response: ", response)
 
+
 def send_to_server(weight, steps, height, direction):  # weight,steps,height
-    server_root="http://10.129.149.33:5000/api"
+    server_root = "http://10.129.149.33:5000/api"
     url = server_root + '/prediction/' + str(height) + "/" + str(weight) + "/" + str(steps) + "/" + str(direction)
     Thread(target=get_request_url, args=(url,)).start()
+
 
 def event_monitor():
     global id_list
@@ -153,23 +166,59 @@ def event_monitor():
     if kill_time_thread:
         print("\n A complete event with:")
         print("\t Event: ", ge_status)
-        print("\t Weight: %d and Steps: %d"%(wm_status[0], wm_status[1]))
+        print("\t Weight: %d and Steps: %d" % (wm_status[0], wm_status[1]))
         print("\t Height: ", us_status)
         print("\n")
         kill_time_thread = True
         is_equal = False
-        ge_str="fault(GE)"
-        if ge_status==1:
+        ge_str = "fault(GE)"
+        if ge_status == 1:
             ge_str = "entry"
-        elif ge_status==-1:
-            ge_str= "exit"
-        send_to_server(wm_status[0],wm_status[1],us_status,ge_str)
+        elif ge_status == -1:
+            ge_str = "exit"
+        send_to_server(wm_status[0], wm_status[1], us_status, ge_str)
     id_list = [0, 0, 0]
     ts_list = [0, 0, 0]
 
+
+def serial_port():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+        return result
+
+
 if __name__ == "__main__":
 
-    weight_serial_name = "ttyUSB0"
+    port = "ttyUSB0"
+    for ports in serial_port():
+        if ports[5:11] == "ttyUSB":
+            print("Found Arduino", ports)
+            port = ports[5:]
+
+    weight_serial_name = port
 
     tof = ToF(tof_callback)
     wm = WM(weight_serial_name, wm_callback)
@@ -179,7 +228,7 @@ if __name__ == "__main__":
     # tof.verbose = True
     # wm.verbose = True
     # us.verbose = True
-    
+
     # us_thread = Thread(target=us.monitor)
     # us_thread.start()
 

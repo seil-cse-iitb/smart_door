@@ -89,6 +89,7 @@ class GridEye(object):
         # print("Initialized Grid Eye")
         self.left_calibration=0
         self.right_calibration=0
+        self.verbose = False
 
 
     def monitor_temperature(self):
@@ -138,8 +139,8 @@ class GridEye(object):
             right_calibration += right_temp
             sleep(0.1)
 
-        left_calibration /= 50
-        right_calibration /= 50
+        left_calibration = 50
+        right_calibration = 50
 
         return left_calibration, right_calibration
 
@@ -242,13 +243,19 @@ class GridEye(object):
         while True:
             self.read_pixels()
             pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold+1).astype(int)
-            # print("right:\n",pixels_array[:,0:3],"\nleft:\n",pixels_array[:,-3:],"\n")
             right= pixels_array[:,0:3]
             left =pixels_array[:,-3:]
 
-            all_count = np.count_nonzero(pixels_array)
+            all_count = np.count_nonzero(pixels_array[:,1:])
             right_count = np.count_nonzero(right)
             left_count = np.count_nonzero(left)
+            
+            if self.verbose:
+                print("Grid Eye Output:")
+                print(pixels_array)
+                print("Right count: %d & Left count: %d\n"%(np.count_nonzero(right), np.count_nonzero(left)))
+            # print("right:\n",pixels_array[:,0:3],"\nleft:\n",pixels_array[:,-3:],"\n")
+
             # print("All count", all_count)
             # print("Left count", left_count)
             # print("Right count", right_count)
@@ -264,13 +271,13 @@ class GridEye(object):
                     # print("Set second_direction", second_direction)
             else:
                 if first_direction < 0 and second_direction < 0:
-                    print("Bhag gaya bc")
+                    print("Bhag gaya :D")
                 elif first_direction < 0 and second_direction > 0:
                     self.callback(1)
                 elif first_direction > 0 and second_direction < 0:
                     self.callback(-1)
                 elif first_direction > 0 and second_direction > 0:
-                    print("Andar aa gaya bc")
+                    print("Andar aa gaya :D")
 
                 first_direction = 0
                 second_direction = 0
