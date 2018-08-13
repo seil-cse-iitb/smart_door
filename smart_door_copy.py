@@ -1,9 +1,11 @@
 import glob
 import sys
-from threading import Thread
+from threading import Thread, Lock
 import time
 import requests
 import serial
+import json
+from mqtt_handler import mqttHandler as MQTT
 
 from tof.ToF import ToF
 from weight_mat.WeightMat import WeightMat as WM
@@ -20,6 +22,20 @@ ts_init = False
 ts = 0
 kill_time_thread = False
 
+lock = Lock()
+mqtt = MQTT()
+appliance_dict = {
+    "17" : [],
+    "18" : [],
+    "19" : [],
+    "20" : [],
+    "21" : [],
+    "22" : [],
+    "23" : [],
+    "24" : [],
+    "25" : [],
+    "26" : []
+}
 
 def time_monitor():
     global ts
@@ -28,7 +44,7 @@ def time_monitor():
 
     # print("Started timer thread at ", ts)
     while not kill_time_thread:
-        if int(time.time()) - ts < 10:
+        if int(time.time()) - ts < 2:
             continue
         else:
             print("False timer tigger")
@@ -51,7 +67,6 @@ def timer_interrupt():
         ts_init = True
         timer_thread = Thread(target=time_monitor)
         timer_thread.start()
-
 
 def events_check(id):
     global id_list
@@ -138,21 +153,60 @@ def us_callback(height):
         kill_time_thread = True
         event_monitor()
 
+def actuate_appliances(user, direction):
+    global mqtt
+    global appliance_dict
+    # mqtt_topic = "actuation/kresit/2/213/"
+    actuation_url = "http://10.129.149.33:1337/equipment/actuate/"
 
-def get_request_url(url):
+    with open('appliances_mapping.json') as config:
+        data = json.load(config)
+    
+    #  for key, value in appliance_dict:
+    for appliances in appliance_dict:
+        # print appliances
+        if user in data[appliances]:
+            if direction == 'entry' and not (user in appliance_dict[appliances]):
+                appliance_dict[appliances].append(user)
+            elif direction == 'exit':
+                if len(appliance_dict[appliances]):
+                    try:
+                        appliance_dict[appliances].remove(user)
+                    except Exception as e:
+                        print(e)
+        
+        # print len(appliance_dict[appliances])
+        if len(appliance_dict[appliances]) != 0:
+            print(actuation_url + appliances + "/ : " + "S1")
+            # mqtt.on_publish(appliances, "S1")
+            requests.post(url = actuation_url + appliances, data = {"msg":"S1","state":True})
+        elif len(appliance_dict[appliances]) == 0:
+            print(actuation_url + appliances + "/ : " + "S0")
+            # mqtt.on_publish(appliances, "S0")
+            requests.post(url = actuation_url + appliances, data = {"msg":"S0","state":False})
+
+def get_request_url(url, direction):
     response = requests.get(url)
     if (response.status_code == 200):
+        
+        predicted_content = str(response.content)
+        user = []
+        user = predicted_content.split("'")
         print("Successfully sent=> ", url)
-        pass
+        print("Prediction	=> ", user[1])
+
+        if len(user[1]) > 0:
+            print(user[1])
+            actuate_appliances(user[1], direction)
+
     else:
         print("Failed to sent=> ", url)
         print("Response: ", response)
 
-
 def send_to_server(weight, steps, height, direction):  # weight,steps,height
     server_root = "http://10.129.149.33:5000/api"
     url = server_root + '/prediction/' + str(height) + "/" + str(weight) + "/" + str(steps) + "/" + str(direction)
-    Thread(target=get_request_url, args=(url,)).start()
+    Thread(target=get_request_url, args=(url, direction)).start()
 
 
 def event_monitor():

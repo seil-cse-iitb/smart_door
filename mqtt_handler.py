@@ -8,10 +8,11 @@ class mqttHandler(object):
     MQTT_HOST = "10.129.149.9"
     MQTT_PORT = 1883
     MQTT_CLIENT = "SmartDoor_rpi"
-    MQTT_TOPIC_GRID_EYE = "rpi/smart_door/grid_eye_data"
-    MQTT_TOPIC_TOF = "rpi/smart_door/tof_data"
-    MQTT_TOPIC_WEIGHT_MAT = "rpi/smart_door/weight_mat"
-    MQTT_TOPIC = "rpi/smart_door/data"
+    # MQTT_TOPIC_GRID_EYE = "rpi/smart_door/grid_eye_data"
+    # MQTT_TOPIC_TOF = "rpi/smart_door/tof_data"
+    # MQTT_TOPIC_WEIGHT_MAT = "rpi/smart_door/weight_mat"
+    # MQTT_TOPIC = "rpi/smart_door/data"
+    MQTT_TOPIC = 'actuation/kresit/2/213/'
     client = mqtt.Client(MQTT_CLIENT)
 
     def __init__(self):
@@ -23,14 +24,14 @@ class mqttHandler(object):
         connection_thread.start()
 
     def on_connect(self,client, userdata, flags, rc):
-        print "Connected to MQTT with result " + str(rc)
+        print("Connected to MQTT with result " + str(rc))
 
     def on_message(self, client, userdata, msg):
-        print ("%s : %s : %d" %(msg.topic, msg.payload, len(msg.payload)))
+        print("%s : %s : %d" %(msg.topic, msg.payload, len(msg.payload)))
 
-    def on_publish(self, mqtt_topic, data):
-        print "Inside publish"
-        self.client.publish(mqtt_topic, data)
+    def on_publish(self, appliance, data):
+        print("Inside publish")
+        self.client.publish(self.MQTT_TOPIC + appliance + "/", data)
 
 if __name__ == "__main__":
 
