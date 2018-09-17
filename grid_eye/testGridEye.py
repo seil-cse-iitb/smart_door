@@ -3,6 +3,7 @@
 from GridEyeAnalysis import GridEye as ge
 import time 
 
+sensor_id = "grideye_k_seil_1"
 count = 0
 
 def test(event):
@@ -15,7 +16,7 @@ def test(event):
     print(time.asctime()," : ", event, " : ", count)
     
 
-ge_object = ge(test)
+ge_object = ge(sensor_id, test)
 # ge_object.monitor()
 ge_object.verbose = False
 ge_object.monitor()

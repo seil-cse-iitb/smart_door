@@ -3,7 +3,7 @@ import paho.mqtt.client as client
 from threading import Thread
 from time import sleep
 
-class mqttHandler(object):
+class MqttHandler(object):
 
     MQTT_HOST = "10.129.149.9"
     MQTT_PORT = 1883
@@ -29,9 +29,10 @@ class mqttHandler(object):
     def on_message(self, client, userdata, msg):
         print("%s : %s : %d" %(msg.topic, msg.payload, len(msg.payload)))
 
-    def on_publish(self, appliance, data):
+    def on_publish(self, topic, data):
         print("Inside publish")
-        self.client.publish(self.MQTT_TOPIC + appliance + "/", data)
+        # self.client.publish(self.MQTT_TOPIC + appliance + "/", data)
+        self.client.publish(topic, data)
 
 if __name__ == "__main__":
 

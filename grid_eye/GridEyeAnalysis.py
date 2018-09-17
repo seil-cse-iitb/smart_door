@@ -4,84 +4,21 @@ import random
 import re
 from time import *
 from Adafruit_AMG88xx import *
-import sys
 import csv
-
-class EntryExitDFA(object):
-    states = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
-    triggers = ["OO", "OI", "IO", "II"]  # [0,1,2,3] #["00","01","10","11"]
-
-    def __init__(self, callback):
-        self.callback = callback
-        # print("DFA init!")
-
-        self.machine = Machine(model=self, states=EntryExitDFA.states, initial="0")
-
-        self.machine.add_transition(trigger=self.triggers[0], source="0", dest="0")
-        self.machine.add_transition(trigger=self.triggers[1], source="0", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="0", dest="2")
-        # self.machine.add_transition(trigger=self.triggers[3], source="0", dest=")"
-
-        self.machine.add_transition(trigger=self.triggers[0], source="1", dest="0")
-        self.machine.add_transition(trigger=self.triggers[1], source="1", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="1", dest="3")
-        self.machine.add_transition(trigger=self.triggers[3], source="1", dest="4")
-
-        self.machine.add_transition(trigger=self.triggers[0], source="2", dest="0")
-        self.machine.add_transition(trigger=self.triggers[1], source="2", dest="5")
-        self.machine.add_transition(trigger=self.triggers[2], source="2", dest="2")
-        self.machine.add_transition(trigger=self.triggers[3], source="2", dest="6")
-
-        self.machine.add_transition(trigger=self.triggers[0], source="3", dest="7", after='exit')
-        self.machine.add_transition(trigger=self.triggers[1], source="3", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="3", dest="3")
-        self.machine.add_transition(trigger=self.triggers[3], source="3", dest="4")
-
-        # self.machine.add_transition(trigger=self.triggers[0], source="4", dest=")"
-        self.machine.add_transition(trigger=self.triggers[1], source="4", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="4", dest="3")
-        self.machine.add_transition(trigger=self.triggers[3], source="4", dest="4")
-
-        self.machine.add_transition(trigger=self.triggers[0], source="5", dest="8", after='entry')
-        self.machine.add_transition(trigger=self.triggers[1], source="5", dest="5")
-        self.machine.add_transition(trigger=self.triggers[2], source="5", dest="2")
-        self.machine.add_transition(trigger=self.triggers[3], source="5", dest="6")
-
-        # self.machine.add_transition(trigger=self.triggers[0], source="6", dest=")"
-        self.machine.add_transition(trigger=self.triggers[1], source="6", dest="5")
-        self.machine.add_transition(trigger=self.triggers[2], source="6", dest="2")
-        self.machine.add_transition(trigger=self.triggers[3], source="6", dest="6")
-
-        self.machine.add_transition(trigger=self.triggers[0], source="7", dest="7")
-        self.machine.add_transition(trigger=self.triggers[1], source="7", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="7", dest="2")
-        # self.machine.add_transition(trigger=self.triggers[3], source="7", dest=")"
-
-        self.machine.add_transition(trigger=self.triggers[0], source="8", dest="8")
-        self.machine.add_transition(trigger=self.triggers[1], source="8", dest="1")
-        self.machine.add_transition(trigger=self.triggers[2], source="8", dest="2")
-        # self.machine.add_transition(trigger=self.triggers[3], source="8", dest=")"
-
-    def exit(self):
-        self.callback(-1)
-        # print("Exit!!")
-        pass
-
-    def entry(self):
-        self.callback(1)
-        # print("Entry!!")
-        pass
+import unicodedata
+import sys
+sys.path.append("/home/pi/Workspaces/smart-door-v4/mqtt")
+from mqtt_handler import MqttHandler as MQTT
 
 
 class GridEye(object):
 
-    def __init__(self, callback):
+    def __init__(self, sensor_id, callback):
         self.callback = callback
 
         self.sensor = Adafruit_AMG88xx()
         self.pixels = []
-        self.dfa = EntryExitDFA(self.callback)
+        # self.dfa = EntryExitDFA(self.callback)
         # Initiating grid eye sensor
         # Setting 10 FPS
         self.sensor._fpsc.FPS = AMG88xx_FPS_10
@@ -90,6 +27,10 @@ class GridEye(object):
         self.left_calibration=0
         self.right_calibration=0
         self.verbose = False
+        self.mqtt = MQTT()
+        self.sensor_id  = sensor_id
+        self.prev_time = 0
+        self.threshold_cross_count = 0
 
         print("Initialized Grid Eye")
 
@@ -230,34 +171,6 @@ class GridEye(object):
 
             sleep(0.1)
 
-    def monitor_sum(self):
-        self.left_calibration, self.right_calibration = self.calibrate()
-        print("Left calibration : {0}, Right calibration: {1}".format(self.left_calibration, self.right_calibration))
-        while True:
-            try:
-                left_sum, right_sum = self.calculate_sum()
-                # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
-
-                if left_sum > self.left_calibration + 120:
-                    sensorL = True
-                else:
-                    sensorL = False
-
-                if right_sum > self.right_calibration + 120:
-                    sensorR = True
-                else:
-                    sensorR = False
-
-                try:
-                    self.triggerEvent(self.dfa, sensorL, sensorR)
-                except:
-                    print("Invalid Event!!")
-                    self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
-
-                sleep(0.10)
-            except Exception as e:
-                print("error ge: "+str(e))
-   
     def calibrate_ones(self):
         while True:
             self.read_pixels()
@@ -266,11 +179,34 @@ class GridEye(object):
             print("\n")
             sleep(.1)
 
+
+    def set_threshold(self, pixels, threshold):
+
+        current_threshold = int(np.mean(np.sort(pixels)[-5:]))
+        
+
+        if -2 < (current_threshold - threshold) > 2:
+            if (int(time()) - self.prev_time) > 1:
+                print("Crossed threshold : ", self.threshold_cross_count)
+                self.prev_time = int(time())
+                self.threshold_cross_count += 1
+            else:
+                self.threshold_cross_count = 0
+        
+        if self.threshold_cross_count > 5:
+            print("Prev Threshold : %d \t Current Threshold : %d"%(threshold, current_threshold))
+            threshold =  current_threshold
+            self.threshold_cross_count = 0
+
+        return threshold
+
+        
     def monitor_ones(self):
         self.read_pixels()
         threshold = int(np.mean(np.sort(self.pixels)[-5:]))
         first_direction = 0
         second_direction = 0
+        data_to_send = []
         init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
         init_min_pixel = np.min(init_pixels_array)
         init_max_pixel = np.max(init_pixels_array)
@@ -281,8 +217,10 @@ class GridEye(object):
 
         while True:
             self.read_pixels()
-            # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold+1).astype(int)
-            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
+            
+            threshold_updated = self.set_threshold(self.pixels, threshold)
+            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold_updated+1).astype(int)
+            # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
             right= pixels_array[:,0:3]
             left =pixels_array[:,-3:]
 
@@ -305,9 +243,9 @@ class GridEye(object):
             # print("Right attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d Std Dev : %d\n"%(right_min_pixel, right_max_pixel, right_mean_pixel, right_std_dev))
             # print("Left  attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d Std Dev : %d\n"%(left_min_pixel, left_max_pixel, left_mean_pixel, left_std_dev))
 
-            print("Min Value: Left: %d, Right: %d"%(left_min_pixel, right_min_pixel))
-            print("Max Value: Left: %d, Right: %d"%(left_max_pixel, right_max_pixel))
-            print("Mean Value:  Left: %d, Right: %d\n"%(left_mean_pixel, right_mean_pixel))
+            # print("Min Value: Left: %d, Right: %d"%(left_min_pixel, right_min_pixel))
+            # print("Max Value: Left: %d, Right: %d"%(left_max_pixel, right_max_pixel))
+            # print("Mean Value:  Left: %d, Right: %d\n"%(left_mean_pixel, right_mean_pixel))
 
             complete_attributes = []
             # comeplete_attributes.append(min_pixel)
@@ -341,30 +279,60 @@ class GridEye(object):
             # print("Left count", left_count)
             # print("Right count", right_count)
             # print("")
+            
 
             if all_count>12:
                 if first_direction == 0:
                     if left_count - right_count > 5 or left_count - right_count < -5:
                         first_direction = left_count - right_count
+                        data_to_send.append(self.pixels)
                         # print("Set first_direction : ", first_direction)
                 else:
                     second_direction = left_count - right_count
+                    data_to_send.append(self.pixels)
                     # print("Set second_direction", second_direction)
+                
+                self.prev_time = int(time())
+
             else:
+                event = 0
                 if first_direction < 0 and second_direction < 0:
                     print("Bhag gaya :D")
+                    # self.callback(-2)
+                    event = -2
                 elif first_direction < 0 and second_direction > 0:
                     self.callback(1)
+                    event = 1
                 elif first_direction > 0 and second_direction < 0:
                     self.callback(-1)
+                    event = -1
                 elif first_direction > 0 and second_direction > 0:
                     print("Andar aa gaya :D")
+                    # self.callback(2)
+                    event = 2
+
+                if event != 0:              
+                    self.sendPixels(event, data_to_send, threshold)
 
                 first_direction = 0
                 second_direction = 0
-
+                data_to_send.clear()
             sleep(0.05)
             
+    def sendPixels(self, event, pixels_to_send, threshold):
+        data = ""
+        offset = -20
+        data += str(time()) + ","
+        for i in range(0, len(pixels_to_send)):
+            for j in range(0, len(pixels_to_send[i])):
+                data += chr(int(pixels_to_send[i][j]))
+            data = data + "-"
+        data = data[:-1] + "," + str(event) + "," + str(self.sensor.readThermistor())+","+str(threshold)
+        # print(data)
+        # print("\n\n")
+
+        topic = "data/kresit/grideye/" + self.sensor_id
+        self.mqtt.on_publish(topic,data)
 
     def monitor(self):
         # self.monitor_histogram()

@@ -185,7 +185,7 @@ class GridEye(object):
 
                 if  right_hist[0][1] > 5 or  right_hist[0][2] > 2:
                     sensorR = True
-                    print("Right Values : %d <                 # session_data["distance_list1"].append(distance1)
+                    # print("Right Values : %d < # session_data["distance_list1"].append(distance1)
                 # session_data["distance_list2"].append(distance2)
                 # session_data["session_count"].append(session_count)120, %d < 125, %d < 130\n"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
                 else:

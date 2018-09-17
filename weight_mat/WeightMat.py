@@ -62,7 +62,7 @@ class WeightMat:
 
     def extract_features(self, readings):
         global data
-        # if len(readings) < 3:
+        # if len(readings) < 2:
         #     return False
         readings_sorted_desc = readings
         peak_index = signal.find_peaks_cwt(readings, widths=np.array([5]))
@@ -160,6 +160,10 @@ class WeightMat:
             elif self.reading_started:
                 self.reading_started = False
                 self.record_count += 1
+#                print(self.readings)
                 record = self.extract_features(self.readings)
+                # if record:
                 self.send(record)
+                # else:
+                        # print("Very less readings! Check weightmat connections![Readings:"+str(self.readings)+"]")
                 self.readings.clear()

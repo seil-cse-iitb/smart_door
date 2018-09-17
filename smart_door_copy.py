@@ -5,11 +5,10 @@ import time
 import requests
 import serial
 import json
-from mqtt_handler import mqttHandler as MQTT
+# from mqtt_handler import mqttHandler as MQTT
 
 from tof.ToF import ToF
 from weight_mat.WeightMat import WeightMat as WM
-# from entry_exit_test.fsm_with_grid_eye import GridEye as GE
 from grid_eye.GridEye import GridEye as GE
 from ultrasonic.Ultrasonic import Ultrasonic as US
 
@@ -22,8 +21,6 @@ ts_init = False
 ts = 0
 kill_time_thread = False
 
-lock = Lock()
-mqtt = MQTT()
 appliance_dict = {
     "17" : [],
     "18" : [],
@@ -42,7 +39,7 @@ def time_monitor():
     global kill_time_thread
     global ts_init
 
-    # print("Started timer thread at ", ts)
+    print("Started timer thread at : ", time.asctime())
     while not kill_time_thread:
         if int(time.time()) - ts < 2:
             continue
@@ -104,7 +101,6 @@ def ge_callback(entry_exit):
         kill_time_thread = True
         event_monitor()
 
-
 def wm_callback(weight, steps):
     global wm_status
     global kill_time_thread
@@ -138,23 +134,8 @@ def tof_callback(height):
         kill_time_thread = True
         event_monitor()
 
-
-def us_callback(height):
-    global us_status
-    global kill_time_thread
-
-    id = 3
-    print("Height: ", height)
-    us_status = height
-
-    timer_interrupt()
-
-    if events_check(id):
-        kill_time_thread = True
-        event_monitor()
-
 def actuate_appliances(user, direction):
-    global mqtt
+    # global mqtt
     global appliance_dict
     # mqtt_topic = "actuation/kresit/2/213/"
     actuation_url = "http://10.129.149.33:1337/equipment/actuate/"
@@ -179,11 +160,11 @@ def actuate_appliances(user, direction):
         if len(appliance_dict[appliances]) != 0:
             print(actuation_url + appliances + "/ : " + "S1")
             # mqtt.on_publish(appliances, "S1")
-            requests.post(url = actuation_url + appliances, data = {"msg":"S1","state":True})
+            requests.post(url = actuation_url + appliances, data = json.dumps({"msg":"S1","state":True}))
         elif len(appliance_dict[appliances]) == 0:
             print(actuation_url + appliances + "/ : " + "S0")
             # mqtt.on_publish(appliances, "S0")
-            requests.post(url = actuation_url + appliances, data = {"msg":"S0","state":False})
+            requests.post(url = actuation_url + appliances, data = json.dumps({"msg":"S0","state":False}))
 
 def get_request_url(url, direction):
     response = requests.get(url)
@@ -197,7 +178,7 @@ def get_request_url(url, direction):
 
         if len(user[1]) > 0:
             print(user[1])
-            actuate_appliances(user[1], direction)
+            # actuate_appliances(user[1], direction)
 
     else:
         print("Failed to sent=> ", url)
@@ -266,40 +247,31 @@ def serial_port():
 
 if __name__ == "__main__":
 
-    port = "ttyUSB0"
-    for ports in serial_port():
-        if ports[5:11] == "ttyUSB":
-            print("Found Arduino", ports)
-            port = ports[5:]
+    port = "ttyACM0"
+    # for ports in serial_port():
+    #     if ports[5:11] == "ttyACM":
+    #         print("Found Arduino", ports)
+    #         port = ports[5:]
 
     weight_serial_name = port
-
+    # print(weight_serial_name)
     tof = ToF(tof_callback)
-    wm = WM(weight_serial_name, wm_callback)
     ge = GE(ge_callback)
-    # us = US(17,4,70,us_callback)
+    wm = WM(weight_serial_name, wm_callback)
 
     # tof.verbose = True
     # wm.verbose = True
-    # us.verbose = True
-
-    # us_thread = Thread(target=us.monitor)
-    # us_thread.start()
-
-    ge_thread = Thread(target=ge.monitor)
-    ge_thread.start()
+    # ge.verbose = True
 
     tof_thread = Thread(target=tof.monitor)
     tof_thread.start()
 
+    ge_thread = Thread(target=ge.monitor)
+    ge_thread.start()
+
     wm_thread = Thread(target=wm.monitor)
     wm_thread.start()
 
-    # em_thread = Thread(target= event_monitor)
-    # em_thread.start()
-
-    tof_thread.join()
-    # us_thread.join()
-    ge_thread.join()
     wm_thread.join()
-    # em_thread.join()
+    tof_thread.join()
+    ge_thread.join()

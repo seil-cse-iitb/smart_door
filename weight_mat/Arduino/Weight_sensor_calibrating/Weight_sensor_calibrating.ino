@@ -18,6 +18,7 @@ void setup() {
   // Serial.println("Readings:");
   vessel_weight = scale.get_units(calibrate);
 }
+
 void loop() {
   Serial.println(scale.get_units(1)-vessel_weight);
 }

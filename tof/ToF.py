@@ -32,7 +32,7 @@ class ToF:
         distance_list = []
         while True:
             distance = self.tof.get_distance()
-#            print(distance)
+        #    print(distance)
             if 0 < distance < 600:
                 self.session = True
                 self.session_id += 1
