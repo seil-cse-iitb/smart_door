@@ -5,7 +5,7 @@ import re
 from time import *
 from Adafruit_AMG88xx import *
 import sys
-
+import csv
 
 class EntryExitDFA(object):
     states = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
@@ -148,7 +148,7 @@ class GridEye(object):
         
         right_hist = []
         left_hist = []
-        hist_bins = [110, 115, 120, 125, 130]
+        hist_bins = [110, 114, 118, 122, 126, 130]
         left_pixels, right_pixels = self.read_pixels()
         
         left_hist = np.histogram(left_pixels[:-8], bins = hist_bins)
@@ -164,38 +164,66 @@ class GridEye(object):
             try:
                 left_hist, right_hist = self.calculate_histogram()
                 
-                # print("Left Values : %d < 120, %d < 125, %d < 130"%(left_hist[0][1], left_hist[0][2], left_hist[0][3]))
-                # print("Right Values : %d < 120, %d < 125, %d < 130"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
+                # print("Left Values : %d < 118, %d < 122, %d < 126, %d < 130"%(left_hist[0][1], left_hist[0][2], left_hist[0][3], left_hist[0][4]))
+                # print("Right Values : %d < 118, %d < 122, %d < 126, %d < 130"%(right_hist[0][1], right_hist[0][2], right_hist[0][3],  right_hist[0][4]))
                 
                 # print("\nLeft Histogram: ",left_hist)
-                # print("Right Histogram:",right_hist)
+                # print("Right Histogram:",right_hist[0])
                 # print("\n")
-                left_count = left_hist[0][2]
-                right_count = right_hist[0][2]
+
+                right_list = []
+                # right_list = right_hist[0].flip()
+                right_list = right_hist[0].tolist()
+                left_list = left_hist[0].tolist()
+                # print(right_list[::-1])
+                # complete_hist =  left_list + right_list[::-1]
+                complete_hist = left_list + right_list
+
+                hist_array = np.array(complete_hist)
+                
+                sum_of_elements = []
+                sum_of_elements.append(sum(complete_hist))
+
+                non_zero_elements = []
+                non_zero_elements.append(np.count_nonzero(hist_array))
+
+                complete_hist += non_zero_elements
+                complete_hist += sum_of_elements
+
+                print("Comeplete histogram : ", complete_hist)
+
+                with open("histogramData.csv", 'a') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(complete_hist)
+                    print("Written to file")
+
+                
+                # left_count = left_hist[0][2]
+                # right_count = right_hist[0][2]
 
                 # left_sum, right_sum = self.calculate_sum()
                 # print("Left sum : {0}, Right sum : {1}".format(left_sum, right_sum))
 
-                if left_hist[0][1] > 5 or left_hist[0][2] > 2:
-                    sensorL = True
-                    print("Temperature : ", self.monitor_temperature())
-                    print("Left Values : %d < 120, %d < 125, %d < 130\n"%(left_hist[0][1], left_hist[0][2], left_hist[0][3]))
-                else:
-                    sensorL = False
+                # if left_hist[0][1] > 5 or left_hist[0][2] > 2:
+                #     sensorL = True
+                #     print("Temperature : ", self.monitor_temperature())
+                #     print("Left Values : %d < 120, %d < 125, %d < 130\n"%(left_hist[0][1], left_hist[0][2], left_hist[0][3]))
+                # else:
+                #     sensorL = False
 
-                if  right_hist[0][1] > 5 or  right_hist[0][2] > 2:
-                    sensorR = True
-                    print("Right Values : %d <                 # session_data["distance_list1"].append(distance1)
-                # session_data["distance_list2"].append(distance2)
-                # session_data["session_count"].append(session_count)120, %d < 125, %d < 130\n"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
-                else:
-                    sensorR = False
+                # if  right_hist[0][1] > 5 or  right_hist[0][2] > 2:
+                #     sensorR = True
+                #     print("Right Values : %d < session_data["distance_list1"].append(distance1)
+                # # session_data["distance_list2"].append(distance2)
+                # # session_data["session_count"].append(session_count)120, %d < 125, %d < 130\n"%(right_hist[0][1], right_hist[0][2], right_hist[0][3]))
+                # else:
+                #     sensorR = False
 
-                try:
-                    self.triggerEvent(self.dfa, sensorL, sensorR)
-                except:
-                    print("Invalid Event!!")
-                    self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
+                # try:
+                #     self.triggerEvent(self.dfa, sensorL, sensorR)
+                # except:
+                #     print("Invalid Event!!")
+                #     self.dfa.machine.set_state(self.dfa.machine.initial, model=self.dfa)
 
             except Exception as e:
                 print(str(e))
@@ -243,13 +271,62 @@ class GridEye(object):
         threshold = int(np.mean(np.sort(self.pixels)[-5:]))
         first_direction = 0
         second_direction = 0
-        
+        init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
+        init_min_pixel = np.min(init_pixels_array)
+        init_max_pixel = np.max(init_pixels_array)
+        init_mean_pixel = np.mean(init_pixels_array)
+        init_std_dev = np.std(init_pixels_array)
+        print("Intial Array attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d  Std Dev : %d\n"%(init_min_pixel, init_max_pixel, init_mean_pixel, init_std_dev))
+        sleep(1)
+
         while True:
             self.read_pixels()
-            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold+1).astype(int)
+            # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold+1).astype(int)
+            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
             right= pixels_array[:,0:3]
             left =pixels_array[:,-3:]
 
+            # print(pixels_array)
+            min_pixel = np.min(pixels_array)
+            max_pixel = np.max(pixels_array)
+            mean_pixel = np.mean(pixels_array)
+            std_dev = np.std(pixels_array)
+
+            right_min_pixel = np.min(right)
+            right_max_pixel = np.max(right)
+            right_mean_pixel = np.mean(right)
+            right_std_dev = np.std(right)
+
+            left_min_pixel = np.min(left)
+            left_max_pixel = np.max(left)
+            left_mean_pixel = np.mean(left)
+            left_std_dev = np.std(left)
+            # print("Array attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d Std Dev : %d\n"%(min_pixel, max_pixel, mean_pixel, std_dev))
+            # print("Right attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d Std Dev : %d\n"%(right_min_pixel, right_max_pixel, right_mean_pixel, right_std_dev))
+            # print("Left  attributes: Min Value Pixel : %d Max Value Pixel : %d Mean Value Pixel : %d Std Dev : %d\n"%(left_min_pixel, left_max_pixel, left_mean_pixel, left_std_dev))
+
+            print("Min Value: Left: %d, Right: %d"%(left_min_pixel, right_min_pixel))
+            print("Max Value: Left: %d, Right: %d"%(left_max_pixel, right_max_pixel))
+            print("Mean Value:  Left: %d, Right: %d\n"%(left_mean_pixel, right_mean_pixel))
+
+            complete_attributes = []
+            # comeplete_attributes.append(min_pixel)
+            complete_attributes.append(left_min_pixel)
+            complete_attributes.append(right_min_pixel)
+
+            # cmeplete_attributes.append(max_pixel)
+            complete_attributes.append(left_max_pixel)
+            complete_attributes.append(right_max_pixel)
+            
+            # cmeplete_attributes.append(mean_pixel)
+            complete_attributes.append(left_mean_pixel)
+            complete_attributes.append(right_mean_pixel)
+
+            with open("complete_attributes.csv", 'a') as file:
+                writer = csv.writer(file)
+                writer.writerow(complete_attributes)
+
+        
             all_count = np.count_nonzero(pixels_array[:,1:])
             right_count = np.count_nonzero(right)
             left_count = np.count_nonzero(left)
