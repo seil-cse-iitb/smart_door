@@ -24,23 +24,23 @@ class ToF:
         # Setup GPIO for each XSHUT pin of the sensor
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(xshut1, GPIO.OUT)
-        GPIO.setup(xshut2, GPIO.OUT)
+        # GPIO.setup(xshut2, GPIO.OUT)
 
         # Make all the XSHUT pins zero
         GPIO.output(xshut1, GPIO.LOW)
-        GPIO.output(xshut2, GPIO.LOW)
+        # GPIO.output(xshut2, GPIO.LOW)
         time.sleep(0.5)
 
         self.verbose = False
         self.tof1 = VL.VL53L0X(address=0x2B)
-        self.tof2 = VL.VL53L0X(address=0x2D)
+        # self.tof2 = VL.VL53L0X(address=0x2D)
         GPIO.output(xshut1, GPIO.HIGH)
         time.sleep(1)
         self.tof1.start_ranging(VL.VL53L0X_GOOD_ACCURACY_MODE)
         
-        GPIO.output(xshut2, GPIO.HIGH)
-        time.sleep(1)
-        self.tof2.start_ranging(VL.VL53L0X_GOOD_ACCURACY_MODE)
+        # GPIO.output(xshut2, GPIO.HIGH)
+        # time.sleep(1)
+        # self.tof2.start_ranging(VL.VL53L0X_GOOD_ACCURACY_MODE)
 
         self.door_height = 2000
         self.session = False
@@ -69,7 +69,7 @@ class ToF:
 
         while True:
             distance1 = self.tof1.get_distance()
-            distance2 = self.tof2.get_distance()
+            # distance2 = self.tof2.get_distance()
 
             # print(distance)
             if 0 < distance1 < 650 or 0 < distance2 < 650:
@@ -84,7 +84,7 @@ class ToF:
                 # session_data["distance_list2"].append(distance2)
                 # session_data["session_count"].append(session_count)
                 distance_list1.append(distance1)
-                distance_list2.append(distance2)
+                # distance_list2.append(distance2)
                 session_count_list.append(session_count)
                 
                 reading_count += 1
@@ -98,7 +98,7 @@ class ToF:
                     #     print("Session completed for %d : %d" % (self.tof2.my_object_number, min(session_data["distance_list2"])))
 
                         print("Session completed for %d : %d" % (self.tof1.my_object_number, min(distance_list1)))
-                        print("Session completed for %d : %d" % (self.tof2.my_object_number, min(distance_list2)))
+                        # print("Session completed for %d : %d" % (self.tof2.my_object_number, min(distance_list2)))
                     
                     self.writeToCSV(session_count_list, distance_list1, distance_list2)
                     self.callback(min(min(distance_list1), min(distance_list2)))
@@ -110,7 +110,7 @@ class ToF:
                     #     "session_count" : []
                     # }
                     distance_list1 = []
-                    distance_list2 = []
+                    # distance_list2 = []
                     session_count_list = []
 
                     reading_count = 0

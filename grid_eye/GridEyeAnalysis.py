@@ -171,6 +171,9 @@ class GridEye(object):
 
             sleep(0.1)
 
+    def walking_speed(self):
+        pass
+        
     def calibrate_ones(self):
         while True:
             self.read_pixels()
@@ -206,7 +209,13 @@ class GridEye(object):
         threshold = int(np.mean(np.sort(self.pixels)[-5:]))
         first_direction = 0
         second_direction = 0
+        event = 0
+        data_before_event = []
+        data_after_event = []
+        complete_data = []
         data_to_send = []
+        index = 0
+        after_event_index = 0
         init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
         init_min_pixel = np.min(init_pixels_array)
         init_max_pixel = np.max(init_pixels_array)
@@ -295,7 +304,7 @@ class GridEye(object):
                 self.prev_time = int(time())
 
             else:
-                event = 0
+
                 if first_direction < 0 and second_direction < 0:
                     print("Bhag gaya :D")
                     # self.callback(-2)
@@ -311,28 +320,65 @@ class GridEye(object):
                     # self.callback(2)
                     event = 2
 
-                if event != 0:              
-                    self.sendPixels(event, data_to_send, threshold)
+                if event == 0 :
+                    if index >= 5:
+                        # print("Recyling data before event")
+                        data_before_event.pop(0)
+                        data_before_event.insert(index, self.pixels)
+                        # print(len(data_before_event), index)
+                        # data_before_event.clear()
+                    else:
+                        data_before_event.append(self.pixels)
+                        index += 1
+                
+                if event != 0:    
+                    
 
+                    if after_event_index < 5:
+                        data_after_event.append(self.pixels)
+                        after_event_index += 1
+                    else:
+                        if data_before_event:
+                            print("Length : and Data before event: ",len(data_before_event))#, data_before_event)
+                            print("Length : and Event Data: ", len(data_to_send))#,data_to_send)
+                            print("Length : and Data after event: ", len(data_after_event))#, data_after_event)
+                            complete_data = data_before_event + data_to_send + data_after_event
+                            # complete_data.extend(data_before_event)
+                            # complete_data.extend(data_to_send)
+                            # complete_data.extend(data_after_event)
+                            print("Length : Complete Data: ", len(complete_data))#,complete_data)
+                            # print(data_to_send.insert(0, data_before_event))
+                        
+                        self.sendPixels(event, complete_data, threshold)
+                    
+                        event = 0
+                        after_event_index = 0
+                        data_after_event.clear()
+                        complete_data.clear()
+                        data_to_send.clear()
+                # index = 0
                 first_direction = 0
                 second_direction = 0
-                data_to_send.clear()
+                
             sleep(0.05)
             
     def sendPixels(self, event, pixels_to_send, threshold):
         data = ""
         offset = -20
         data += str(time()) + ","
+        
         for i in range(0, len(pixels_to_send)):
             for j in range(0, len(pixels_to_send[i])):
                 data += chr(int(pixels_to_send[i][j]))
             data = data + "-"
         data = data[:-1] + "," + str(event) + "," + str(self.sensor.readThermistor())+","+str(threshold)
-        # print(data)
+        print(data)
         # print("\n\n")
 
         topic = "data/kresit/grideye/" + self.sensor_id
         self.mqtt.on_publish(topic,data)
+
+        print("Data Published..!!")
 
     def monitor(self):
         # self.monitor_histogram()
