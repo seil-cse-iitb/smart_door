@@ -1,5 +1,5 @@
-# from ToF import ToF
-from multipleToF import ToF
+from ToF import ToF
+# from multipleToF import ToF
 
 def test(value):
     print(value)
@@ -7,9 +7,9 @@ def test(value):
 
 tof = ToF(test)
 tof.verbose = True
-tof.test()
+# tof.test()
 
-# tof.monitor()
+tof.monitor()
 
 
 # if tof.calibrate():

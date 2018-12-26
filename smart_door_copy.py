@@ -247,7 +247,7 @@ def serial_port():
 
 if __name__ == "__main__":
 
-    port = "ttyACM0"
+    port = "ttyUSB0"
     # for ports in serial_port():
     #     if ports[5:11] == "ttyACM":
     #         print("Found Arduino", ports)

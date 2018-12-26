@@ -6,16 +6,16 @@ sys.path.append(file_dir)
 # above code is for adding current folder as library path so that python search this directory also for any library
 
 import math
-
+import time
 # from sklearn import preprocessing, svm
 # import pandas as pd
 import numpy as np
 import serial
 from scipy import signal
 
-from hx711 import *
+# from hx711 import *
 
-GPIO.setmode(GPIO.BCM)
+# GPIO.setmode(GPIO.BCM)
 
 
 class WeightMat:
@@ -62,8 +62,8 @@ class WeightMat:
 
     def extract_features(self, readings):
         global data
-        # if len(readings) < 2:
-        #     return False
+        if len(readings) < 2:
+            return False
         readings_sorted_desc = readings
         peak_index = signal.find_peaks_cwt(readings, widths=np.array([5]))
         steps = len(peak_index)
@@ -162,8 +162,8 @@ class WeightMat:
                 self.record_count += 1
 #                print(self.readings)
                 record = self.extract_features(self.readings)
-                # if record:
-                self.send(record)
-                # else:
-                        # print("Very less readings! Check weightmat connections![Readings:"+str(self.readings)+"]")
+                if record:
+                    self.send(record)
+                else:
+                    print("Very less readings! Check weightmat connections![Readings:"+str(self.readings)+"]")
                 self.readings.clear()

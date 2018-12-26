@@ -31,6 +31,10 @@ class GridEye(object):
         self.sensor_id  = sensor_id
         self.prev_time = 0
         self.threshold_cross_count = 0
+        self.current_time = 0
+        self.start_time = 0
+        self.end_time = 0
+        self.no_of_frames = 0
 
         print("Initialized Grid Eye")
 
@@ -38,7 +42,7 @@ class GridEye(object):
     def monitor_temperature(self):
         temp = self.sensor.readThermistor()
         return temp
-        
+
     def read_pixels(self):
         right_pixels = []
         left_pixels = []
@@ -86,12 +90,12 @@ class GridEye(object):
     def calculate_histogram(self):
         right_pixels = []
         left_pixels = []
-        
+
         right_hist = []
         left_hist = []
         hist_bins = [110, 114, 118, 122, 126, 130]
         left_pixels, right_pixels = self.read_pixels()
-        
+
         left_hist = np.histogram(left_pixels[:-8], bins = hist_bins)
         right_hist = np.histogram(right_pixels[8:], bins = hist_bins)
 
@@ -104,10 +108,10 @@ class GridEye(object):
         while True:
             try:
                 left_hist, right_hist = self.calculate_histogram()
-                
+
                 # print("Left Values : %d < 118, %d < 122, %d < 126, %d < 130"%(left_hist[0][1], left_hist[0][2], left_hist[0][3], left_hist[0][4]))
                 # print("Right Values : %d < 118, %d < 122, %d < 126, %d < 130"%(right_hist[0][1], right_hist[0][2], right_hist[0][3],  right_hist[0][4]))
-                
+
                 # print("\nLeft Histogram: ",left_hist)
                 # print("Right Histogram:",right_hist[0])
                 # print("\n")
@@ -121,7 +125,7 @@ class GridEye(object):
                 complete_hist = left_list + right_list
 
                 hist_array = np.array(complete_hist)
-                
+
                 sum_of_elements = []
                 sum_of_elements.append(sum(complete_hist))
 
@@ -138,7 +142,7 @@ class GridEye(object):
                     writer.writerow(complete_hist)
                     print("Written to file")
 
-                
+
                 # left_count = left_hist[0][2]
                 # right_count = right_hist[0][2]
 
@@ -173,7 +177,7 @@ class GridEye(object):
 
     def walking_speed(self):
         pass
-        
+
     def calibrate_ones(self):
         while True:
             self.read_pixels()
@@ -186,7 +190,7 @@ class GridEye(object):
     def set_threshold(self, pixels, threshold):
 
         current_threshold = int(np.mean(np.sort(pixels)[-5:]))
-        
+
 
         if -2 < (current_threshold - threshold) > 2:
             if (int(time()) - self.prev_time) > 1:
@@ -195,7 +199,7 @@ class GridEye(object):
                 self.threshold_cross_count += 1
             else:
                 self.threshold_cross_count = 0
-        
+
         if self.threshold_cross_count > 5:
             print("Prev Threshold : %d \t Current Threshold : %d"%(threshold, current_threshold))
             threshold =  current_threshold
@@ -203,7 +207,7 @@ class GridEye(object):
 
         return threshold
 
-        
+
     def monitor_ones(self):
         self.read_pixels()
         threshold = int(np.mean(np.sort(self.pixels)[-5:]))
@@ -226,7 +230,7 @@ class GridEye(object):
 
         while True:
             self.read_pixels()
-            
+
             threshold_updated = self.set_threshold(self.pixels, threshold)
             pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold_updated+1).astype(int)
             # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
@@ -264,7 +268,7 @@ class GridEye(object):
             # cmeplete_attributes.append(max_pixel)
             complete_attributes.append(left_max_pixel)
             complete_attributes.append(right_max_pixel)
-            
+
             # cmeplete_attributes.append(mean_pixel)
             complete_attributes.append(left_mean_pixel)
             complete_attributes.append(right_mean_pixel)
@@ -273,11 +277,11 @@ class GridEye(object):
                 writer = csv.writer(file)
                 writer.writerow(complete_attributes)
 
-        
+
             all_count = np.count_nonzero(pixels_array[:,1:])
             right_count = np.count_nonzero(right)
             left_count = np.count_nonzero(left)
-            
+
             if self.verbose:
                 print("Grid Eye Output:")
                 print(pixels_array)
@@ -288,7 +292,7 @@ class GridEye(object):
             # print("Left count", left_count)
             # print("Right count", right_count)
             # print("")
-            
+
 
             if all_count>12:
                 if first_direction == 0:
@@ -296,12 +300,14 @@ class GridEye(object):
                         first_direction = left_count - right_count
                         data_to_send.append(self.pixels)
                         # print("Set first_direction : ", first_direction)
+                        self.start_time = time()
                 else:
                     second_direction = left_count - right_count
                     data_to_send.append(self.pixels)
                     # print("Set second_direction", second_direction)
-                
-                self.prev_time = int(time())
+                    self.end_time = time()
+                self.no_of_frames += 1
+                # self.prev_time = int(time())
 
             else:
 
@@ -330,9 +336,8 @@ class GridEye(object):
                     else:
                         data_before_event.append(self.pixels)
                         index += 1
-                
-                if event != 0:    
-                    
+
+                if event != 0:
 
                     if after_event_index < 5:
                         data_after_event.append(self.pixels)
@@ -348,9 +353,9 @@ class GridEye(object):
                             # complete_data.extend(data_after_event)
                             print("Length : Complete Data: ", len(complete_data))#,complete_data)
                             # print(data_to_send.insert(0, data_before_event))
-                        
+
                         self.sendPixels(event, complete_data, threshold)
-                    
+
                         event = 0
                         after_event_index = 0
                         data_after_event.clear()
@@ -359,20 +364,21 @@ class GridEye(object):
                 # index = 0
                 first_direction = 0
                 second_direction = 0
-                
+
             sleep(0.05)
-            
+
     def sendPixels(self, event, pixels_to_send, threshold):
+        print("Publishing data over MQTT")
         data = ""
         offset = -20
         data += str(time()) + ","
-        
+
         for i in range(0, len(pixels_to_send)):
             for j in range(0, len(pixels_to_send[i])):
                 data += chr(int(pixels_to_send[i][j]))
             data = data + "-"
         data = data[:-1] + "," + str(event) + "," + str(self.sensor.readThermistor())+","+str(threshold)
-        print(data)
+        # print(data)
         # print("\n\n")
 
         topic = "data/kresit/grideye/" + self.sensor_id
@@ -380,6 +386,107 @@ class GridEye(object):
 
         print("Data Published..!!")
 
+    def monitor_singlePersonDet(self):
+        sleep(1)
+        event = 0
+        data_to_send = []
+        while True:
+            #read a frame
+            self.read_pixels()
+            threshold = int(np.mean(np.sort(self.pixels)[-5:]))
+            init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
+
+            #initialization
+            frame=init_pixels_array
+            maxValue = np.max(frame)
+            minValue = np.min(frame)
+            thresChange=1000
+            newEvent=False
+            final_Grid_Position=[]
+            track_Grid_Position=[]
+            CheckStatus=False
+
+            #check for new Event
+            for i in range(len(frame)):
+                sum_sq_diff_col=0
+                for j in range(len(frame)):
+                    sum_sq_diff_col+=((frame[j][i]-minValue)**2)*2
+                        #print("frame"+str(frame[j][i]))
+                track_Grid_Position.append((sum_sq_diff_col,i))
+            for (dif,pos) in track_Grid_Position:
+                if dif>thresChange:
+                    newEvent=True
+                    break
+            #print (minValue,maxValue)
+            #print ("------position--------")
+            #print (track_Grid_Position)
+            #---------------New Event---------
+            while newEvent:
+                final_Grid_Position.append(max(track_Grid_Position))
+                #print((final_Grid_Position))
+                track_Grid_Position=[]
+
+                self.read_pixels()
+                threshold = int(np.mean(np.sort(self.pixels)[-5:]))
+                frame = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
+                maxValue = np.max(frame)
+                minValue = np.min(frame)
+
+                data_to_send.append(self.pixels)
+
+                for i in range(len(frame)):
+                    sum_sq_diff_col=0
+                    for j in range(len(frame)):
+                        sum_sq_diff_col+=((frame[j][i]-minValue)**2)*2
+                            #print("frame"+str(frame[j][i]))
+                    track_Grid_Position.append((sum_sq_diff_col,i))
+                newEvent=False
+                for (dif,pos) in track_Grid_Position:
+                    if dif>thresChange:
+                        newEvent=True
+                if maxValue > minValue + 15:
+                    newEvent=True
+
+                if ~newEvent:
+                    CheckStatus=True
+
+            while CheckStatus and len(final_Grid_Position)>5:
+                #print ("new Event")
+                Status_Sum=-9999
+                prevCol=0
+                checkForFalsePosNeg=[]
+                for (val,col) in final_Grid_Position:
+                    if(Status_Sum==-9999):
+                        Status_Sum=0
+                    else:
+                        if(col>prev):
+                            Status_Sum+=1
+                        elif(col<prev):
+                            Status_Sum-=1
+                    #print(col)
+                    prev=col
+                    checkForFalsePosNeg.append(col)
+                #print(len(set(checkForFalsePosNeg)))
+                print("Event Time: ", asctime())
+                print(Status_Sum)
+                if(Status_Sum>=3):
+                    print("Entry")
+                    event = 1
+                elif(Status_Sum<=-3):
+                    print("Exit")
+                    event = -1
+                else:
+                    print("False Alarm")
+                    event = -2
+                print(final_Grid_Position)
+                self.sendPixels(event, data_to_send, 1)
+                data_to_send.clear()
+                event = 0
+                CheckStatus=False
+                print("\n")
+
+                
     def monitor(self):
         # self.monitor_histogram()
-        self.monitor_ones()
+        # self.monitor_ones()
+        self.monitor_singlePersonDet()
