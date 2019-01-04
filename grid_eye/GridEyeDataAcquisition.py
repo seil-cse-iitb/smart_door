@@ -506,107 +506,36 @@ class GridEye(object):
                     if frame[row][value] < 0:
                         frame[row][value] = 0
             sumValue = np.array(frame).sum(axis=0)
+            # sumValue1= np.append(sumValue[1:],[0])
+            # sumValue2 = np.append(sumValue[2:] ,[0,0])
+            # finalSum = np.add(np.add(sumValue,sumValue1),sumValue2)
             maxI = np.argmax(sumValue)
             maxV = np.max(sumValue)
-            print(frame)
-            print("MaxI:",maxI,", MaxV: ",maxV,", WholeSum:",np.sum(sumValue))
-            if maxV>80:
-                event=True
-
+            # print("Final Sum: ",finalSum)
+            print("MaxI:",maxI,", MaxV: ",maxV)
+            if maxV > 70:
+                if not event:
+                    print("Event Started!------------- ", asctime())
+                    eventStartI=maxI
+                    event = True
+                eventEndI = maxI
             else:
-                event=False
-
-    def monitor_bg_sub(self):
-
-        trigger_value=0
-        stop_event=20
-        max_value=5000
-
-        sleep(1)
-        prevFrame=np.zeros((8,8))
-        maxSum=0
-        prevSum=0
-        prevBgSum=0
-        initFrame=np.zeros((8,8))
-        event=False
-        while True:
-            # read a frame
-            self.read_pixels()
-            init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
-            # initialization
-            frame = init_pixels_array
-
-            subFrame = np.subtract(frame, prevFrame)
-
-            # subFrame=np.square(subFrame)
-            subFrame[subFrame <= 5] = 0
-            curSum=sum(np.mean(subFrame,axis=0))
-
-            if curSum> trigger_value and curSum<max_value and not event:
-                initFrame = prevFrame
-                print("____________________________")
-                print(np.sum(subFrame,axis=0))
-                print("***********************/****")
-                print(asctime(), ", Event started and cursum:",curSum, maxSum)
-                maxSum=max(maxSum,curSum)
-                print("FrameSubtracted: \n", subFrame)
-                event=True
-
-
-            if event:
-                bgSubtractedFrame=np.subtract(frame,initFrame)
-                curBgSum= sum(np.sum(bgSubtractedFrame,axis=0))
-                # print(asctime()," curBgSum:",curBgSum," curBgSum-prevBgSum:",curBgSum-prevBgSum)
-                if curBgSum<stop_event:
-                    print(asctime(),", Event ended")
+                if event:
+                    print("EventStartI: ",eventStartI,", EventEndI: ",eventEndI)
+                    if (eventStartI < 2) and (eventEndI > 5):
+                        print("Entry")
+                    elif (eventEndI < 2) and (eventStartI > 5):
+                        print("Exit")
+                    else:
+                        print("False Event")
+                    print("Event Finished!------------- ",asctime())
+                    eventStartI=-1
+                    eventEndI=-1
                     event=False
 
-            # if curSum>50:
-            #     print("----------------------------------------------")
-            #     # print("PrevFrame: \n",prevFrame," \nFrame: \n",frame)
-            #     print(asctime()," Frame-PrevFrame: \n",subFrame)
-            #     print("curSum: ",curSum," maxSub: ",maxSub, "cursub-prevsub:",curSum-prevSum)
-            prevSum=curSum
-            prevFrame=frame
-
-    def monitor_background(self):
-        sleep(1)
-        event=False
-        eventStartI=-1
-        eventEndI=-1
-        while True:
-            # read a frame
-            # self.read_pixels()
-            # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
-            # print("Pixels: ",  str(pixels_array.tolist()), " type: ", type(str(pixels_array.tolist())))
-            self.csvWrite(self.read_pixels())
-
-
-    def csvWrite(self, pixels_to_store):
-        
-        bg_data = []
-        ge_data = ""
-        for i in range(0, len(pixels_to_store)):
-            for j in range(0, len(pixels_to_store[i])):
-                ge_data += chr(int(pixels_to_store[i][j]))
-            # bg_data = bg_data + "-"
-
-        bg_data.append(asctime())
-        bg_data.append(ge_data)
-        print(bg_data)
-
-        with open("/home/pi/Workspaces/smart-door-v4/grid_eye/background_data.csv", 'a') as file:
-            # bg_data = data[:-1] + "," + str(event) + "," + str(self.sensor.readThermistor()) + "," + str(threshold)
-            # bg_data = asctime() + ", " + str(pixels_to_store)
-            
-            writer = csv.writer(file)
-            writer.writerow(bg_data)
-            print("Written to file")
 
     def monitor(self):
         # self.monitor_histogram()
-        # self.monitor_ones()
+        self.monitor_ones()
         # self.monitor_singlePersonDet()
-        #self.monitor_sapan_entry_exit()
-        # self.monitor_bg_sub()
-        self.monitor_background()
+        # self.monitor_sapan_entry_exit()
