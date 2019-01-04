@@ -472,21 +472,70 @@ class GridEye(object):
                 if(Status_Sum>=3):
                     print("Entry")
                     event = 1
+                    self.sendPixels(event, data_to_send, 1)
+                    data_to_send.clear()
+                    event = 0
                 elif(Status_Sum<=-3):
                     print("Exit")
                     event = -1
+                    self.sendPixels(event, data_to_send, 1)
+                    data_to_send.clear()
+                    event = 0
                 else:
                     print("False Alarm")
                     event = -2
                 print(final_Grid_Position)
-                self.sendPixels(event, data_to_send, 1)
-                data_to_send.clear()
-                event = 0
                 CheckStatus=False
                 print("\n")
 
-                
+    def monitor_sapan_entry_exit(self):
+        sleep(1)
+        event=False
+        eventStartI=-1
+        eventEndI=-1
+        while True:
+            # read a frame
+            self.read_pixels()
+            init_pixels_array = np.transpose(np.reshape(self.pixels, [8, 8])).astype(int)
+            # initialization
+            frame = init_pixels_array
+            minValue = np.min(frame)
+            for row in range(0, len(frame)):
+                for value in range(0, len(frame[row])):
+                    frame[row][value] = frame[row][value] - minValue
+                    if frame[row][value] < 0:
+                        frame[row][value] = 0
+            sumValue = np.array(frame).sum(axis=0)
+            # sumValue1= np.append(sumValue[1:],[0])
+            # sumValue2 = np.append(sumValue[2:] ,[0,0])
+            # finalSum = np.add(np.add(sumValue,sumValue1),sumValue2)
+            maxI = np.argmax(sumValue)
+            maxV = np.max(sumValue)
+            # print("Final Sum: ",finalSum)
+            print("MaxI:",maxI,", MaxV: ",maxV)
+            if maxV > 70:
+                if not event:
+                    print("Event Started!------------- ", asctime())
+                    eventStartI=maxI
+                    event = True
+                eventEndI = maxI
+            else:
+                if event:
+                    print("EventStartI: ",eventStartI,", EventEndI: ",eventEndI)
+                    if (eventStartI < 2) and (eventEndI > 5):
+                        print("Entry")
+                    elif (eventEndI < 2) and (eventStartI > 5):
+                        print("Exit")
+                    else:
+                        print("False Event")
+                    print("Event Finished!------------- ",asctime())
+                    eventStartI=-1
+                    eventEndI=-1
+                    event=False
+
+
     def monitor(self):
         # self.monitor_histogram()
-        # self.monitor_ones()
-        self.monitor_singlePersonDet()
+        self.monitor_ones()
+        # self.monitor_singlePersonDet()
+        # self.monitor_sapan_entry_exit()
