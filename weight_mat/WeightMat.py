@@ -1,5 +1,3 @@
-
-
 import sys, os
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -16,15 +14,17 @@ from scipy import signal
 # from hx711 import *
 
 # GPIO.setmode(GPIO.BCM)
-
-
 class WeightMat:
+
     def read(self):
         line = str(self.s.readline())[2:-5]
+        # print(line)
+        # line = str(self.s.readline())
         try:
             reading  = 0.0
             if(len(line.strip())>0):
                 reading = float(line.strip())
+                # print(reading)
             else:
                 print("blank value;\n")
             # print(reading)
@@ -152,15 +152,19 @@ class WeightMat:
         return record
 
     def monitor(self):
+        print("Print inside monitor function")
         while (True):
-            reading = self.read()
+            reading = abs(self.read())
+            # print(abs(reading))
             if reading > 20000:
                 self.reading_started = True
                 self.readings.append(reading)
+                # print(reading)
             elif self.reading_started:
+                print("done with readings now analyzing..!!")
                 self.reading_started = False
                 self.record_count += 1
-#                print(self.readings)
+                print(self.readings)
                 record = self.extract_features(self.readings)
                 if record:
                     self.send(record)

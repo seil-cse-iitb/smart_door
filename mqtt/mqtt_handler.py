@@ -36,4 +36,4 @@ class MqttHandler(object):
 
 if __name__ == "__main__":
 
-    mqtt_handler = mqttHandler()
+    mqtt_handler = MqttHandler()

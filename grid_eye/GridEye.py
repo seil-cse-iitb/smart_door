@@ -73,6 +73,7 @@ class EntryExitDFA(object):
         # print("Entry!!")
         pass
 
+        print("Initialized Grid Eye")
 
 class GridEye(object):
 

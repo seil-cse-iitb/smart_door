@@ -47,7 +47,7 @@ class GridEye(object):
         right_pixels = []
         left_pixels = []
         self.pixels = self.sensor.readPixels()
-        # print("\nPixels: ", self.pixels)
+        print("\nPixels: ", self.pixels)
         right_pixels = self.pixels[:32]
         left_pixels = self.pixels[32:]
         return left_pixels, right_pixels
@@ -605,8 +605,8 @@ class GridEye(object):
 
     def monitor(self):
         # self.monitor_histogram()
-        # self.monitor_ones()
+        self.monitor_ones()
         # self.monitor_singlePersonDet()
-        #self.monitor_sapan_entry_exit()
+        # self.monitor_sapan_entry_exit()
         # self.monitor_bg_sub()
-        self.monitor_background()
+        # self.monitor_background()
