@@ -1,4 +1,5 @@
 import sys, os
+
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
 # above code is for adding current folder as library path so that python search this directory also for any library
@@ -11,18 +12,31 @@ import numpy as np
 import serial
 from scipy import signal
 
-# from hx711 import *
 
-# GPIO.setmode(GPIO.BCM)
 class WeightMat:
 
+    def __init__(self, serial_name, callback, event_handler):
+        self.name = "WM"
+        self.weight=None
+        self.steps=None
+        self.serial = None
+        self.initialize_serial(serial_name)
+        self.reading_started = False
+        self.record_count = 1
+        self.readings = []
+        self.can_send = False
+        self.verbose = False
+        self.callback = callback
+        self.event_handler = event_handler
+        self.status = "READING"
+
     def read(self):
-        line = str(self.s.readline())[2:-5]
+        line = str(self.serial.readline())[2:-5]
         # print(line)
         # line = str(self.s.readline())
         try:
-            reading  = 0.0
-            if(len(line.strip())>0):
+            reading = 0.0
+            if (len(line.strip()) > 0):
                 reading = float(line.strip())
                 # print(reading)
             else:
@@ -30,23 +44,13 @@ class WeightMat:
             # print(reading)
         except Exception as e:
             print(line)
-            print("Exception "+e)
+            print("Exception " + e)
             return -1
         return reading
 
-    def __init__(self, serial_name,callback):
-        self.s = None
-        self.initialize_serial(serial_name)
-        self.reading_started = False
-        self.record_count = 1
-        self.readings = []
-        self.can_send = False
-        self.verbose = False
-        self.callback= callback
-
     def initialize_serial(self, serial_name):
         try:
-            self.s = serial.Serial("/dev/"+serial_name, 115200, timeout=1)
+            self.serial = serial.Serial("/dev/" + serial_name, 115200, timeout=1)
             print("Calibrating....please don't put any weight on mat!")
             time.sleep(2)
             print("Weight mat on Duty!")
@@ -54,14 +58,14 @@ class WeightMat:
             print("Serial port is not connected: ", serial_name)
         skip = 20
         while skip > 0:
-            self.s.readline()
+            self.serial.readline()
             skip -= 1
 
     def set_verbose(self, value):
         self.verbose = value
 
     def extract_features(self, readings):
-        global data
+        # global data
         if len(readings) < 2:
             return False
         readings_sorted_desc = readings
@@ -71,7 +75,7 @@ class WeightMat:
             steps = 2
         readings_sorted_desc.sort(reverse=True)
         difference_in_kg = 0
-        if(len(readings)>=3):
+        if len(readings) >= 3:
             difference_in_kg = readings_sorted_desc[0] - readings_sorted_desc[1]
             difference_in_kg += readings_sorted_desc[1] - readings_sorted_desc[2]
             difference_in_kg = difference_in_kg / 1000
@@ -79,10 +83,10 @@ class WeightMat:
         limit = readings_sorted_desc[1] - 35000
         readings_sorted_desc = readings_sorted_desc[readings_sorted_desc >= limit]
         offset = 0
-        if difference_in_kg > 15 and difference_in_kg <= 30:
+        if 15 < difference_in_kg <= 30:
             offset = 1
         elif difference_in_kg > 30:
-            if (len(readings_sorted_desc) > 5):
+            if len(readings_sorted_desc) > 5:
                 offset = 2
             else:
                 offset = 1
@@ -144,30 +148,86 @@ class WeightMat:
     def is_triggered(self):
         return self.reading_started
 
-
     def send(self, record):
         if self.verbose:
             print(record, " Send Function yet to write")
-        self.callback(record[0][0],record[0][1])
+        self.callback(record[0][0], record[0][1])
         return record
 
+    def set_status(self, status):
+        self.status = status
+        self.event_handler(self)
+
+    def get_status(self):
+        return self.status
+
+    def is_data_ok(self):
+        if self.weight is not None and self.steps is not None:
+            return True
+        else:
+            return False
+
+    def reset_status_and_data(self):
+        self.weight=None
+        self.steps=None
+        self.set_status("READING")
+
     def monitor(self):
-        print("Print inside monitor function")
-        while (True):
+        self.set_status("READING")
+        while True:
+            if self.get_status() == "COMPLETED":
+                time.sleep(0.1)
+                continue
+
             reading = abs(self.read())
-            # print(abs(reading))
+            #print(abs(reading))
             if reading > 20000:
                 self.reading_started = True
                 self.readings.append(reading)
-                # print(reading)
+                if self.get_status() == "READING":
+                    self.set_status("TRIGGERED")
+                #print(reading)
             elif self.reading_started:
-                print("done with readings now analyzing..!!")
                 self.reading_started = False
                 self.record_count += 1
-                print(self.readings)
                 record = self.extract_features(self.readings)
                 if record:
-                    self.send(record)
+                    self.weight=record[0][0]
+                    self.steps=record[0][1]
+                    self.callback(self.weight, self.steps)
+                    self.set_status("COMPLETED")
                 else:
-                    print("Very less readings! Check weightmat connections![Readings:"+str(self.readings)+"]")
+                    print("Very less readings! Check weightmat connections![Readings:" + str(self.readings) + "]")
+                    self.callback(None, None)
+                    self.set_status("COMPLETED")
+                if self.verbose:
+                    print(self.readings)
+                self.readings.clear()
+    
+    def test(self):
+        self.set_status("READING")
+        while True:
+            reading = abs(self.read())
+            #print(abs(reading))
+            if reading > 20000:
+                self.reading_started = True
+                self.readings.append(reading)
+                if self.get_status() == "READING":
+                    self.set_status("TRIGGERED")
+                print(reading)
+            elif self.reading_started:
+                self.reading_started = False
+                self.record_count += 1
+                record = self.extract_features(self.readings)
+                if record:
+                    self.weight=record[0][0]
+                    self.steps=record[0][1]
+                    self.callback(self.weight, self.steps)
+                    self.set_status("COMPLETED")
+                else:
+                    print("Very less readings! Check weightmat connections![Readings:" + str(self.readings) + "]")
+                    self.callback(None, None)
+                    self.set_status("COMPLETED")
+                if self.verbose:
+                    print(self.readings)
                 self.readings.clear()

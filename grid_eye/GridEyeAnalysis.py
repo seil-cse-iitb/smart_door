@@ -47,7 +47,7 @@ class GridEye(object):
         right_pixels = []
         left_pixels = []
         self.pixels = self.sensor.readPixels()
-        print("\nPixels: ", self.pixels)
+        # print("\nPixels: ", self.pixels)
         right_pixels = self.pixels[:32]
         left_pixels = self.pixels[32:]
         return left_pixels, right_pixels
