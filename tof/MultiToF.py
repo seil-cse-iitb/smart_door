@@ -69,7 +69,7 @@ class ToF:
             for tof in self.tofs:
                 distance =  min(distance, tof.get_distance())
             #    print(distance)
-            if 0 < distance < 600:
+            if 0 < distance < 1000:
                 if self.get_status() == "READING":
                     self.set_status("TRIGGERED")
                 self.session = True
