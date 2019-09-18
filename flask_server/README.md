@@ -1,3 +1,7 @@
+# need to change mqtt ip address in static/js/contoller.js line 73 for front-end to work
+
+
+
 # Running
 *  nohup mosquitto -c /home/shinjan/Programs/mqtt/mosquitto.conf &
 * `export FLASK_APP=~/Workspaces/smart-door-v3/Server/server.py`

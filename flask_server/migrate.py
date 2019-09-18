@@ -1,2 +1,2 @@
-from server import *
+from models import *
 db.create_all()

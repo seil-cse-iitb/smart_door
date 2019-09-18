@@ -1,25 +1,25 @@
 version: '2.2'
 services:
   # $ docker run -it -p 1883:1883 -p 9001:9001 -v mosquitto.conf:/mosquitto/config/mosquitto.conf eclipse-mosquitto
-  # eclipse-mosquitto:
-  #   image: eclipse-mosquitto:1.6
-  #   container_name: eclipse-mosquitto-1
-  #   ports: 
-  #     - 1883:1883
-  #     - 1884:1884
-  #   volumes:
-  #     - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+#  eclipse-mosquitto:
+#     image: eclipse-mosquitto:1.6
+#     container_name: eclipse-mosquitto-1
+#     ports:
+#       - 1883:1883
+#       - 1884:1884
+#     volumes:
+#       - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
   smart_door_flask_server:
      image: sapantanted/seil:smart_door_flask_server
      container_name: smart_door_flask_server
      environment:
-       - MQTT_IP=10.129.149.9
+       - MQTT_IP=10.129.149.33
        - MQTT_PORT=1883
      ports:
        - 5000:5000
      volumes:
        - ./data/:/home/smart_door/flask_server/data/
        - ./smart_door_sqlite.db:/home/smart_door/flask_server/smart_door_sqlite.db
-
+       - ./:/home/smart_door/flask_server/
 
   

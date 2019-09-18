@@ -13,7 +13,8 @@ def train_model():  # id,height,weight,steps
     global svc, min_max_scaler
     train = pd.DataFrame(pd.read_csv("./data/train_data.csv")).sample(frac=1).values
     train = shuffle(train)
-    x_train = pd.DataFrame(train[:, 1:3])
+#    x_train = pd.DataFrame(train[:, 1:3])
+    x_train = pd.DataFrame(train[:, [2,1]]) #weight , height
     y_train = train[:, 0]
     # feature_range = (0, 1)
     # min_max_scaler = preprocessing.MinMaxScaler(feature_range=feature_range)
@@ -40,7 +41,8 @@ def predict(record):  # record = [height,weight,steps]
     # x_test = test_data.iloc[:,1:]
     # y_test = test_data.iloc[:, 0]
     x_test = []
-    x_test.append(record[0:2])
+#    x_test.append(record[0:2])
+    x_test.append([record[1],record[0]]) #weight, height
     # y_test = ["person_name"]
     # x_test = min_max_scaler.fit_transform(x_test)
     print(x_test)
