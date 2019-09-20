@@ -95,7 +95,7 @@ def prediction(height,weight,steps,direction):
 		record = Record(date=datetime.datetime.now(),height=height,weight=weight,predicted_user_id=predicted_id,steps=steps,direction=direction)
 		r = record.as_dict()
 		r['predicted_user_email']=occupant.email
-		r['location']=7
+		r['location']=4
 		print(str(r))
 		mqttc.publish("smartdoor/data/"+direction, str(r))
 		db.session.add(record)

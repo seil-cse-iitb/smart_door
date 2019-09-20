@@ -70,7 +70,7 @@ angular.module('SmartDoor')
       protocolId: 'MQTT',
       protocolVersion: 4
     };
-    ngmqtt.connect('ws://10.129.149.33:1884', options);
+    ngmqtt.connect('ws://192.168.1.146:1884', options);
 
     ngmqtt.listenConnection("HomeCtrl", function () {
       console.log("connected");
@@ -98,7 +98,7 @@ angular.module('SmartDoor')
               var text = (record.direction == 'entry' ? "Welcome to the lab, " : "Goodbye, ")+$scope.occupants[i].name;
               var msg = new SpeechSynthesisUtterance();
               var voices = window.speechSynthesis.getVoices();
-              msg.voice = voices[7];
+              msg.voice = voices[2];
               msg.rate = 1;
               msg.pitch = 1;
               msg.text = text;        
