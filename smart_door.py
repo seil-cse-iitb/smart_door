@@ -13,7 +13,6 @@ from weight_mat.WeightMat import WeightMat as WM
 
 server_root = "http://10.129.149.33:5000/api"
 
-
 def get_request_url(url, direction):
     response = requests.get(url)
     if response.status_code == 200:
@@ -131,6 +130,7 @@ if __name__ == "__main__":
     tof = ToF(xshut_pins, addresses, is_multiple_tof, tof_callback, event_handler)
     ge = GE(ge_callback, event_handler)
     wm = WM(weight_serial_name, wm_callback, event_handler)
+    ge.set_server_root(server_root)
 
     tof.verbose = False
     wm.verbose = False

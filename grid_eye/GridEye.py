@@ -24,10 +24,21 @@ class GridEye(object):
         self.status = "READING"
         self.prev_time = 0
         self.threshold_cross_count = 0
-
+        self.server_root=None
         # self.ts["READING", "TRIGGERED", "COMPLETED"] = [-1, -1, -1]
 
         print("Initialized Grid Eye")
+
+    def set_server_root(self,server_root):
+        self.server_root=server_root
+
+    def send_live_data(self,pixels):
+        if self.server_root is None:
+            return
+        url = server_root + '/ge_live_viz/'+str(pixels)
+        response = requests.get(url)
+        if response.status_code != 200:
+            print("ge_live_data could not be sent! http response code: ",str(response.status_code))
 
     def set_status(self, status):
         self.status = status
@@ -85,6 +96,7 @@ class GridEye(object):
             right_count = np.count_nonzero(right)
             left_count = np.count_nonzero(left)
 
+            send_live_data(np.reshape(pixels_array,[1,64]))
             if self.verbose:
                 print("Grid Eye Output:")
                 print(pixels_array)
