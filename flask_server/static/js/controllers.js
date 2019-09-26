@@ -70,7 +70,7 @@ angular.module('SmartDoor')
       protocolId: 'MQTT',
       protocolVersion: 4
     };
-    ngmqtt.connect('ws://10.129.149.33:1884', options);
+    ngmqtt.connect('ws://10.129.149.32:1884', options);
 
     ngmqtt.listenConnection("HomeCtrl", function () {
       console.log("connected");
@@ -80,8 +80,8 @@ angular.module('SmartDoor')
 
     ngmqtt.listenMessage("HomeCtrl", function (topic, data) {
       data = data.toString();
-      console.log(data);
-      console.log(topic)
+      // console.log(data);
+      // console.log(topic)
       switch (topic) {
         case "smartdoor/data/entry":
         case "smartdoor/data/exit":
@@ -126,6 +126,11 @@ angular.module('SmartDoor')
           $scope.event = "";
           break;
 
+        case 'smartdoor/ge_live_viz':
+          var pixels=JSON.parse(data.replace(/ /g, ","))
+          $scope.ge_live_data = pixels;
+          $scope.$apply();
+          break;
       }
     });
   })
