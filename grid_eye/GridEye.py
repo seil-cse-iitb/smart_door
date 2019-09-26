@@ -2,7 +2,7 @@ from transitions import *
 import numpy as np
 from time import *
 from Adafruit_AMG88xx import *
-
+import requests
 
 class GridEye(object):
 
@@ -35,7 +35,7 @@ class GridEye(object):
     def send_live_data(self,pixels):
         if self.server_root is None:
             return
-        url = server_root + '/ge_live_viz/'+str(pixels)
+        url = self.server_root + '/ge_live_viz/'+requests.utils.quote(str(pixels))
         response = requests.get(url)
         if response.status_code != 200:
             print("ge_live_data could not be sent! http response code: ",str(response.status_code))
@@ -96,7 +96,7 @@ class GridEye(object):
             right_count = np.count_nonzero(right)
             left_count = np.count_nonzero(left)
 
-            send_live_data(np.reshape(pixels_array,[1,64]))
+            self.send_live_data(pixels_array)
             if self.verbose:
                 print("Grid Eye Output:")
                 print(pixels_array)
