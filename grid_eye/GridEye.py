@@ -65,7 +65,7 @@ class GridEye(object):
 
     def monitor_ones(self):
         self.read_pixels()
-        threshold = int(np.mean(np.sort(self.pixels)[-5:]))
+        self.threshold = int(np.mean(np.sort(self.pixels)[-5:]))
         first_direction = 0
         second_direction = 0
         self.set_status("READING")
@@ -76,69 +76,75 @@ class GridEye(object):
                 continue
 
             self.read_pixels()
-            threshold_updated = self.set_threshold(self.pixels, threshold)
-            pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold_updated + 1).astype(int)
-            right = pixels_array[:, 0:3]
-            left = pixels_array[:, -3:]
-
-            all_count = np.count_nonzero(pixels_array[:, 1:])
-            right_count = np.count_nonzero(right)
-            left_count = np.count_nonzero(left)
-
-            if self.verbose:
-                print("Grid Eye Output:")
-                print(pixels_array)
-                print("Right count: %d & Left count: %d\n" % (np.count_nonzero(right), np.count_nonzero(left)))
-            # print("right:\n",pixels_array[:,0:3],"\nleft:\n",pixels_array[:,-3:],"\n")
-
-            # print("All count", all_count)
-            # print("Left count", left_count)
-            # print("Right count", right_count)
-            # print("")
-
-            if all_count > 12:
-                if first_direction == 0:
-                    if left_count - right_count > 5 or left_count - right_count < -5:
-                        first_direction = left_count - right_count
-                        self.set_status("TRIGGERED")
-                        # print("Set first_direction : ", first_direction)
-                else:
-                    second_direction = left_count - right_count
-                    # print("Set second_direction", second_direction)
+            if np.std(self.pixels)<2.6 and self.get_status() == "READING" :
+                self.threshold = int(np.mean(self.pixels))
             else:
-                if first_direction < 0 and second_direction < 0:
-                    print("Bhag gaya :D")
-                    self.event = -2
-                    self.callback(self.event)
-                    self.set_status("COMPLETED")
-                elif first_direction < 0 and second_direction > 0:
-                    print("Entry")
-                    self.event = 1
-                    self.callback(self.event)
-                    self.set_status("COMPLETED")
-                elif first_direction > 0 and second_direction < 0:
-                    print("Exit")
-                    self.event = -1
-                    self.callback(self.event)
-                    self.set_status("COMPLETED")
-                elif first_direction > 0 and second_direction > 0:
-                    print("Andar aa gaya :D")
-                    self.event = 2
-                    self.callback(self.event)
-                    self.set_status("COMPLETED")
-                else:
-                    if self.get_status() == "TRIGGERED":
-                        self.event=None
-                        self.status="READING"
-                        # self.event = None
-                        # self.callback(self.event)  # Something wrong
-                        # self.set_status("COMPLETED")
-                        print("Something wrong:: first_direction: ", first_direction, ", second_direction:",
-                              second_direction)
-                first_direction = 0
-                second_direction = 0
+                # self.threshold = self.set_threshold(self.pixels, self.threshold)
+                pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > self.threshold + 1).astype(int)
+                right = pixels_array[:, 0:3]
+                left = pixels_array[:, -3:]
 
-            sleep(0.05)
+                all_count = np.count_nonzero(pixels_array[:, 1:])
+                right_count = np.count_nonzero(right)
+                left_count = np.count_nonzero(left)
+
+                if self.verbose:
+                    print("Grid Eye Output:")
+                    print(pixels_array)
+                    # print(np.reshape(self.pixels, [8, 8]))
+                    print(np.std(self.pixels))
+                    print("Right count: %d & Left count: %d\n" % (np.count_nonzero(right), np.count_nonzero(left)))
+                # print("right:\n",pixels_array[:,0:3],"\nleft:\n",pixels_array[:,-3:],"\n")
+
+                # print("All count", all_count)
+                # print("Left count", left_count)
+                # print("Right count", right_count)
+                # print("")
+
+                if all_count > 12:
+                    if first_direction == 0:
+                        if left_count - right_count > 5 or left_count - right_count < -5:
+                            first_direction = left_count - right_count
+                            self.set_status("TRIGGERED")
+                            print(self.threshold)
+                            # print("Set first_direction : ", first_direction)
+                    else:
+                        second_direction = left_count - right_count
+                        # print("Set second_direction", second_direction)
+                else:
+                    if first_direction < 0 and second_direction < 0:
+                        print("Bhag gaya :D")
+                        self.event = -2
+                        self.callback(self.event)
+                        self.set_status("COMPLETED")
+                    elif first_direction < 0 and second_direction > 0:
+                        print("Entry")
+                        self.event = 1
+                        self.callback(self.event)
+                        self.set_status("COMPLETED")
+                    elif first_direction > 0 and second_direction < 0:
+                        print("Exit")
+                        self.event = -1
+                        self.callback(self.event)
+                        self.set_status("COMPLETED")
+                    elif first_direction > 0 and second_direction > 0:
+                        print("Andar aa gaya :D")
+                        self.event = 2
+                        self.callback(self.event)
+                        self.set_status("COMPLETED")
+                    else:
+                        if self.get_status() == "TRIGGERED":
+                            self.event=None
+                            self.status="READING"
+                            # self.event = None
+                            # self.callback(self.event)  # Something wrong
+                            # self.set_status("COMPLETED")
+                            print("Something wrong:: first_direction: ", first_direction, ", second_direction:",
+                                second_direction)
+                    first_direction = 0
+                    second_direction = 0
+
+                sleep(0.05)
 
     def reset_status_and_data(self):
         self.event=None
