@@ -108,6 +108,10 @@ def events(direction,action):
 	mqttc.publish("smartdoor/events/"+direction+"/"+action)
 	return "published"
 
+@app.route('/api/ge_live_viz/<pixels>')
+def ge_live_viz(pixels):
+	mqttc.publish("smartdoor/ge_live_viz",pixels)
+	return "published ge_live_viz"
 #
 # @app.route('/atmos/prediction/<height>/<weight>/<steps>/<direction>')
 # def prediction_atmos(height,weight,steps,direction):
