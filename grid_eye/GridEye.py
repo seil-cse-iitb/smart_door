@@ -97,6 +97,9 @@ class GridEye(object):
         first_direction = 0
         second_direction = 0
         self.set_status("READING")
+        while not self.queue.full():
+            self.read_pixels()
+            threshold_updated = self.moving_average_threshold(self.pixels)
         while True:
 
             if self.get_status() == "COMPLETED":
