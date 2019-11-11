@@ -2,7 +2,7 @@
 
 import sys, os
 import RPi.GPIO as GPIO
-from statistics import median
+from statistics import median,mean
 
 file_dir = os.path.dirname(__file__)
 sys.path.append(file_dir)
@@ -81,7 +81,7 @@ class ToF:
                 reading_count += 1
             else:
                 if self.session:
-                    self.height= min(distance_list)
+                    self.height= int(mean(distance_list))
                     if self.verbose:
                         print("Session completed: ", self.height)
                     self.callback(self.height)
@@ -119,7 +119,7 @@ class ToF:
             for tof in self.tofs:
                 distance = min(distance, tof.get_distance())
             print(distance)
-            if 0 < distance < 600:
+            if 0 < distance < 1000:
                 self.session = True
                 self.session_id += 1
                 if self.verbose:
@@ -129,7 +129,7 @@ class ToF:
                 reading_count += 1
             else:
                 if self.session:
-                    self.height = min(distance_list)
+                    self.height = mean(distance_list)
                     if self.verbose:
                         print("Session completed: ", self.height)
                     self.callback(self.height)

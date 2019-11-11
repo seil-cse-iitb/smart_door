@@ -112,7 +112,7 @@ class GridEye(object):
                 threshold_updated = self.moving_average_threshold(self.pixels)
             # threshold_updated = 85
             # pixels_array = np.transpose(np.reshape(self.pixels, [8, 8]) > threshold_updated + 1).astype(int)
-            pixels_array = (np.reshape(self.pixels, [8, 8]) > threshold_updated + 1).astype(int)
+            pixels_array = np.flip(np.reshape(self.pixels, [8, 8]) > threshold_updated,1).astype(int)
             right = pixels_array[:, 0:3]
             left = pixels_array[:, -3:]
 
@@ -133,7 +133,7 @@ class GridEye(object):
             # print("Right count", right_count)
             # print("")
 
-            if all_count > 12:
+            if all_count > 8:
                 if first_direction == 0:
                     if left_count - right_count > 5 or left_count - right_count < -5:
                         first_direction = left_count - right_count

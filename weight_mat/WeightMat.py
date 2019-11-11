@@ -31,11 +31,11 @@ class WeightMat:
         self.status = "READING"
 
     def read(self):
-        line = str(self.serial.readline())[2:-5]
+        reading = 0.0
         # print(line)
         # line = str(self.s.readline())
         try:
-            reading = 0.0
+            line = str(self.serial.readline())[2:-5]
             if (len(line.strip()) > 0):
                 reading = float(line.strip())
                 # print(reading)
@@ -43,8 +43,10 @@ class WeightMat:
                 print("blank value;\n")
             # print(reading)
         except Exception as e:
-            print(line)
-            print("Exception " + e)
+            # print(line)
+            print("Exception " + str(e))
+            while not (self.initialize_serial("ttyUSB0") or self.initialize_serial("ttyUSB1")):
+                pass
             return -1
         return reading
 
@@ -52,14 +54,16 @@ class WeightMat:
         try:
             self.serial = serial.Serial("/dev/" + serial_name, 115200, timeout=1)
             print("Calibrating....please don't put any weight on mat!")
-            time.sleep(2)
+            # time.sleep(2)
             print("Weight mat on Duty!")
         except:
             print("Serial port is not connected: ", serial_name)
+            return False
         skip = 20
         while skip > 0:
             self.serial.readline()
             skip -= 1
+        return True
 
     def set_verbose(self, value):
         self.verbose = value
@@ -120,7 +124,10 @@ class WeightMat:
 
         top_readings_with_offset = np.array(
             readings_sorted_desc[offset:offset + math.floor(percent * (len(readings_sorted_desc) - offset) / 100)])
-        avg_weight_v1 = top_readings_with_offset.mean()
+        if len(top_readings_with_offset)>0:
+            avg_weight_v1 = top_readings_with_offset.mean()
+        else:
+            avg_weight_v1 = -1
         # avg_weight_v2 = (readings[peak_index[0]] + readings[peak_index[0] + 1] + readings[peak_index[0] + 2]) / 3
         # print(readings_sorted_desc)
         if self.verbose:
@@ -180,6 +187,8 @@ class WeightMat:
                 continue
 
             reading = abs(self.read())
+            if reading==1:
+                continue
             #print(abs(reading))
             if reading > 20000:
                 self.reading_started = True
