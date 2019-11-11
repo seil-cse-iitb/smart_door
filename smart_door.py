@@ -11,7 +11,7 @@ from tof.MultiToF import ToF
 from grid_eye.GridEye import GridEye as GE
 from weight_mat.WeightMat import WeightMat as WM
 
-server_root = "http://10.129.149.32:5000/api"
+server_root = "http://192.168.1.146:5000/api"
 
 
 def get_request_url(url, direction):
