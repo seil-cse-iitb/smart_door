@@ -1,10 +1,11 @@
+from config import DATABASE_URI
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import enum
 from sqlalchemy.orm import relationship
 app = Flask(__name__)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smart_door_sqlite.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URI
 db = SQLAlchemy(app)
 
 class OccupancyEnum(enum.Enum):
@@ -28,17 +29,29 @@ class User(db.Model):
 
 class Record(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date=db.Column(db.Date,nullable=False)
+    timestamp=db.Column(db.DateTime,nullable=False)
     height=db.Column(db.Float,nullable=False)
     weight=db.Column(db.Float,nullable=False)
     actual_user_id=db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     predicted_user_id=db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     steps=db.Column(db.Integer,nullable=False)
-    direction=db.Column(db.String,nullable=False)
+    direction=db.Column(db.String(10),nullable=False)
 
     actual_user = relationship("User", foreign_keys=[actual_user_id])
     predicted_user = relationship("User", foreign_keys=[predicted_user_id])
     def __repr__(self):
         return '<Record %r,%r>' % (self.predicted_user.name,self.data)
+    def as_dict(self):
+        return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp=db.Column(db.DateTime,nullable=False)
+    user_id=db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    direction=db.Column(db.String(10),nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+    def __repr__(self):
+        return '<Tag %r,%r>' % (self.user.name,self.data)
     def as_dict(self):
         return {c.name: str(getattr(self, c.name)) for c in self.__table__.columns}

@@ -40,7 +40,7 @@ def test_ws():
 
 @app.route('/api/occupants/')
 def occupants():
-	occupants = User.query.all()
+	occupants = User.query.order_by("name").all()
 	# people = [{'name':"Sapan"},{'name':"Shaunak"},{'name':"Shinjan"}, {'name':"Bhushan"}]
 	# list_of_dict = [{i} for i in range(5)]
 	occupants = [i.as_dict() for i in occupants]
@@ -62,10 +62,14 @@ def training_on(id):
 @app.route('/api/tag/<id>')
 def tag(id):
 	occupant = User.query.get(int(id))
+	direction = 'entry'
 	if occupant.occupancy_status == OccupancyEnum.absent:
 		occupant.occupancy_status = OccupancyEnum.present
 	else:
 		occupant.occupancy_status = OccupancyEnum.absent
+		direction = 'exit'
+	tag = Tag(timestamp=datetime.datetime.now(),user_id=occupant.id,direction=direction)
+	db.session.add(tag)
 	db.session.commit()
 	return jsonify(occupant.as_dict())
 
@@ -92,7 +96,7 @@ def prediction(height,weight,steps,direction):
 			occupant.occupancy_status = OccupancyEnum.present
 		else:
 			occupant.occupancy_status = OccupancyEnum.absent
-		record = Record(date=datetime.datetime.now(),height=height,weight=weight,predicted_user_id=predicted_id,steps=steps,direction=direction)
+		record = Record(timestamp=datetime.datetime.now(),height=height,weight=weight,predicted_user_id=predicted_id,steps=steps,direction=direction)
 		r = record.as_dict()
 		r['predicted_user_email']=occupant.email
 		r['location']=4
