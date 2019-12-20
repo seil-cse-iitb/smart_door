@@ -71,6 +71,11 @@ def tag(id):
 	tag = Tag(timestamp=datetime.datetime.now(),user_id=occupant.id,direction=direction)
 	db.session.add(tag)
 	db.session.commit()
+	t = tag.as_dict()
+	t['predicted_user_email']=occupant.email
+	t['location']=7
+	print(str(t))
+	mqttc.publish("smartdoor/data/"+direction, str(t))
 	return jsonify(occupant.as_dict())
 
 @app.route('/api/retrain')

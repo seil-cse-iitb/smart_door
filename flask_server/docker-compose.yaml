@@ -13,13 +13,13 @@ services:
      image: sapantanted/seil:smart_door_flask_server
      container_name: smart_door_flask_server
      environment:
-       - MQTT_IP=10.129.149.32
+       - MQTT_IP=10.129.149.9
        - MQTT_PORT=1883
      ports:
        - 5000:5000
      volumes:
        - ./data/:/home/smart_door/flask_server/data/
-       - ./smart_door_sqlite.db:/home/smart_door/flask_server/smart_door_sqlite.db
+      #  - ./smart_door_sqlite.db:/home/smart_door/flask_server/smart_door_sqlite.db
        - ./:/home/smart_door/flask_server/
 
   
